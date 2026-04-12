@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { match } from 'path-to-regexp';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -49,11 +48,10 @@ export async function updateSession(request: NextRequest) {
   // if user doesn't exist and the page is protected, redirect to login
   if (
     !user &&
-    protectedPages.some((page) => {
-      // eslint-disable-next-line no-unexpected-multiline
-      const matcher = match(page);
-      return matcher(request.nextUrl.pathname);
-    })
+    protectedPages.some((page) =>
+      request.nextUrl.pathname === page ||
+      request.nextUrl.pathname.startsWith(page + '/')
+    )
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

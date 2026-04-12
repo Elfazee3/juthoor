@@ -1,17 +1,14 @@
 import { type NextRequest } from 'next/server';
-import { match } from 'path-to-regexp';
 import { updateSession } from './supabase-clients/middleware';
-
-const apiRoutes = ['/api{/*path}'];
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // api routes are not handled by middleare for this project.
-  if (apiRoutes.some((route) => match(route)(pathname))) {
+  // api routes are not handled by middleware for this project.
+  if (pathname.startsWith('/api/') || pathname === '/api') {
     return null;
   }
-  if (request.nextUrl.pathname) return await updateSession(request);
+  if (pathname) return await updateSession(request);
 }
 
 export const config = {

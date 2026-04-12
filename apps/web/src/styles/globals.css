@@ -1,3 +1,6 @@
+/* Google Fonts — Arabic + Latin — must be first */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @import 'tailwindcss';
 
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
@@ -14,9 +17,6 @@
    JUTHOOR DESIGN TOKENS — جذور
    Palestinian Roots Platform
    ═══════════════════════════════════════════════════ */
-
-/* Google Fonts — Arabic + Latin */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   /* ── Primitive color palette ── */
