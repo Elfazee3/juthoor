@@ -24,13 +24,14 @@ const robotoMono = localFont({
 });
 
 export const metadata = {
-  title: 'Nextbase Open source starter',
-  description: 'Built with Next.js, Supabase, and Tailwind CSS',
+  title: 'جذور — Juthoor | Palestinian Roots Platform',
+  description: 'Reconnecting Palestinian families scattered across the world through a unified, intelligent family tree network.',
+  keywords: ['Palestinian', 'genealogy', 'family tree', 'roots', 'جذور', 'عائلة', 'فلسطين'],
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${robotoMono.variable}`}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning className={`${inter.variable} ${robotoMono.variable}`}>
       <head />
       <body>
         <DynamicLayoutProviders>
