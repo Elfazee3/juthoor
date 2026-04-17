@@ -1,75 +1,176 @@
-# NextBase Starter
+# Juthoor — جذور
 
-![NextBase Lite Open Source Free Boilerplate](https://github.com/imbhargav5/nextbase-nextjs-supabase-starter/blob/main/.github/litebanner.png?raw=true)
+> **Palestinian Roots Platform** — Connecting 15.2 million scattered Palestinians through a unified, intelligent family tree network. Arabic-first. Free access by mission.
 
-Nextbase Lite is a simple Next.js 16 + Supabase boilerplate. It includes a Next.js 16 app with Typescript, Supabase and Tailwind CSS. It includes the all new `app` folder, `layout` components, React `server components` and more!
+---
 
-## Features
+## Overview
 
-- 🚀 Next.js 16
-- 💻 Data fetching examples in React server and client components. Suspenseful data fetching with minimal loading screens.
-- ⚛️ React query setup configured
-- 🔥 React Hot Toast component
-- 💻 Fully typed with Typescript. Includes automatic type generation for Supabase tables
-- 🎨 Tailwindcss
-- 🧪 Unit testing and integration testing setups built-in
-- 💚 Eslint, typescript, prettier, postcss configured for dev and test environments
-- 📈 Automatic sitemap generation
-- 🔍 SEO metadata, JSON-LD and Open Graph tags with NEXT SEO
-- ✍️ Changesets-based version PRs with automatic changelog generation
-- 🎨 Prettier Code formatter
-- 💎 Minimal styling
-- 📖 Codebase which is easy to read and modify
+**Juthoor** (جذور, meaning "Roots") is a bilingual (Arabic/English) genealogy platform built to help Palestinians worldwide rebuild, preserve, and share their family trees. The platform is designed around:
 
-### Development
+- **Arabic-first, RTL-native** user experience
+- **GEDCOM 7.0.18** international genealogy standard compliance (round-trip import/export)
+- **Fellegi-Sunter** probabilistic matching engine for connecting family trees
+- **Row Level Security** — every family's data is protected at the database layer
+- **530+ depopulated Palestinian villages** seeded as reference data (1948 Nakba)
 
-**Prerequisites:**
-- Node.js 22 or higher (recommended to use [nvm](https://github.com/nvm-sh/nvm) for Node version management)
+### Stack
 
-**Steps:**
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router) + TypeScript |
+| Styling | Tailwind CSS (RTL-enabled) |
+| Database | Supabase (PostgreSQL 15) |
+| Auth | Supabase Auth |
+| Genealogy Format | GEDCOM 7.0.18 |
+| Arabic NLP | jslingua (JS) + pyarabic (planned) |
+| Tree Visualization | family-chart + react-family-tree (planned) |
 
-1. Clone the repo
-2. Install dependencies with `pnpm install`
-3. Create a Supabase account if you don't have one already
-4. Create a new project in Supabase
-5. Link Supabase to your project using `pnpm supabase link --project-ref <project-ref>`. You can get your project ref from the Supabase Project dashboard (Project Settings -> API)
-6. Duplicate `.env.local.example` and rename it to `.env.local` and add the Project ref, Supabase URL and anon key.
-7. Push the database schema to your Supabase project using `pnpm supabase db push`.
-8. Generate types for your Supabase tables using `pnpm generate:types:local`.
-9. Run `pnpm dev` to start the development server.
+---
 
-### Testing
+## Project Status
 
-1. Unit test using `pnpm test`
-2. End-to-end test using `pnpm test:e2e`
+**Phase 0 — Foundation:** ✅ Complete
+**Step 2 — Database Schema:** ✅ Complete (GEDCOM 7-aligned, 263 villages seeded)
+**Step 3 — Tree Builder:** 🎯 Next up
 
-### Deployment
+See [`PROGRESS.md`](./PROGRESS.md) for detailed task tracking.
+See [`docs/Juthoor_Progress_Report.pdf`](./docs/Juthoor_Progress_Report.pdf) for a non-technical overview.
 
-This is a simple Next.js project. Deployment is the same as any other Next.js project. You can deploy it to Vercel, Netlify, or any other hosting provider.
+---
 
-### Contributing
+## Database Schema (GEDCOM 7 Aligned)
 
-Contributions are welcome. Please open an issue or a PR.
+Ten tables covering persons, families, events, places, and matching:
 
-If your PR changes the starter in a way that should be released, add a changeset with
-`pnpm changeset`. Merged changesets are rolled into an automated "Version Packages" PR,
-which updates `apps/web`, syncs the repo version metadata, and creates a GitHub release
-when that PR lands on `main`.
+| Table | GEDCOM Tag | Purpose |
+|---|---|---|
+| `persons` | INDI | Individual person records |
+| `person_names` | NAME | Multi-language names (AR + EN), birth/married/maiden |
+| `families` | FAM | Family unit linking two partners |
+| `family_children` | CHIL | Child-to-family with pedigree (birth/adopted/foster) |
+| `events` | BIRT/DEAT/EMIG/MARR... | Life events with date + place |
+| `places` | PLAC | Bilingual places with coordinates |
+| `trees` | — | Family tree container |
+| `tree_members` | — | Access control (owner/collaborator/read-only) |
+| `matches` | — | Fellegi-Sunter matching results |
+| `profiles` | SUBM | User profiles (extends Supabase Auth) |
 
-### License
+**Security:** 38 Row Level Security policies enforce access at the database level.
 
-MIT
+**Migrations:** Versioned in `apps/database/supabase/migrations/`.
 
-### Troubleshooting
+---
 
-Checkout the [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) file for common issues.
+## Development
 
-## Premium NextBase Boilerplate
+### Prerequisites
 
-Also checkout our premium boilerplate with more features. It includes a fully functional authentication system, user profiles, organisations, row level security, and more.
+- Node.js 22+
+- pnpm
+- Supabase account + project
 
-[![NextBase Boilerplate](https://github.com/imbhargav5/nextbase-nextjs-supabase-starter/blob/main/.github/banner.png?raw=true)](https://usenextbase.com)
+### Setup
 
-## Deployment
+```bash
+# 1. Install dependencies
+pnpm install
 
-[![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostinger.com/web-apps-hosting)
+# 2. Copy env file and add your Supabase credentials
+cp apps/web/.env.local.example apps/web/.env.local
+# Edit .env.local with:
+#   NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-key>
+
+# 3. Apply database migrations (via Supabase dashboard SQL editor or CLI)
+# Migrations are in: apps/database/supabase/migrations/
+#   - 20260416120000_juthoor_gedcom_schema.sql  (tables, enums, triggers)
+#   - 20260416120001_juthoor_rls_policies.sql   (RLS policies)
+
+# 4. Seed the villages (optional, after auth setup)
+# File: apps/database/supabase/seed_villages.sql (263 depopulated villages)
+
+# 5. Generate TypeScript types (after login)
+npx supabase login
+npx supabase gen types typescript --project-id <ref> > apps/web/src/types/database.ts
+
+# 6. Run the dev server
+pnpm dev
+```
+
+Visit `http://localhost:3000`.
+
+---
+
+## Architecture Principles
+
+1. **Immutability** — Always create new objects, never mutate existing ones
+2. **Many small files** — Typical 200-400 lines, 800 max; organized by feature
+3. **Fail fast validation** — All user input validated at system boundaries
+4. **Bilingual by default** — Every user-facing string supports AR + EN
+5. **Schema-first** — TypeScript types derived from Supabase schema
+
+---
+
+## Mission & Values
+
+Palestine has over 15 million people scattered across the world after the 1948 Nakba and subsequent displacements. Family trees have been fragmented across generations, refugee camps, and diaspora communities. Juthoor aims to:
+
+- **Rebuild the Mother Tree** — one merged family tree connecting all Palestinians
+- **Honor origin villages** — each of the 530 depopulated villages has a place in our data model
+- **Preserve Arabic naming** — maiden names, tribal lineages, honorifics (أبو, ابن, etc.) treated as first-class
+- **Free access always** — genealogy as a right, not a subscription
+
+---
+
+## Roadmap
+
+### Phase 1 — MVP (Current)
+- [x] Step 1: Scaffold, branding, Arabic RTL, auth
+- [x] Step 2: Database schema (GEDCOM 7 aligned, villages seeded)
+- [ ] Step 3: Tree Builder (Add Person, 360° view, GEDCOM import/export)
+- [ ] Step 4: Family Finder (phonetic search, Arabic name variants)
+- [ ] Step 5: Matching Engine (Fellegi-Sunter batch process)
+- [ ] Step 6: Auth + Access Control polish
+- [ ] Step 7: RTL + Bilingual polish
+
+### Phase 2 — Growth
+- Tree collaboration (invite family members)
+- Village pages (each of 530 villages gets a page)
+- Document crowdsourcing (Ottoman deeds, UNRWA records)
+- Evidence confidence meters
+
+### Phase 3 — Scale
+- Performance (P95 < 2s)
+- 99.9% uptime SLA
+- Native iOS + Android apps
+- 20,000 MAU target
+
+---
+
+## Documentation
+
+- [`PROGRESS.md`](./PROGRESS.md) — Detailed task tracker (checkboxes per feature)
+- [`docs/Juthoor_Progress_Report.pdf`](./docs/Juthoor_Progress_Report.pdf) — Non-technical stakeholder overview
+- [`apps/database/supabase/migrations/`](./apps/database/supabase/migrations/) — All schema migrations
+- [`apps/web/src/types/database.ts`](./apps/web/src/types/database.ts) — TypeScript database types
+
+---
+
+## References
+
+- **GEDCOM 7 Spec:** https://gedcom.io/specifications/FamilySearchGEDCOMv7.html
+- **GedcomParser (C# reference):** https://github.com/jaklithn/GedcomParser
+- **Palestine Remembered:** https://www.palestineremembered.com
+- **Fellegi-Sunter Record Linkage:** Splink library
+
+---
+
+## License
+
+MIT — free for the Palestinian community and all who want to contribute.
+
+---
+
+**Juthoor — جذور**
+Connecting Palestinian roots, one family at a time.
