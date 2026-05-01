@@ -1,0 +1,83 @@
+'use client';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, GitBranch } from 'lucide-react';
+import { PathGraph } from './PathGraph';
+import type { DegreesResult } from '@/data/user/degrees';
+import { kinshipLabel } from '@/lib/search/relationLabels';
+
+export function DegreesDialog({
+  open,
+  onClose,
+  data,
+  locale,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  data: DegreesResult;
+  locale: 'ar' | 'en';
+  t: <T extends string>(ar: T, en: T) => T;
+}) {
+  return (
+    <AnimatePresence>
+      {open && data && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--jt-stone-900)]/60 p-4 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-[var(--jt-olive-200)] bg-[var(--card)] p-6 shadow-[var(--jt-shadow-xl)] md:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute end-4 top-4 rounded-full p-2 text-[var(--jt-stone-500)] transition-colors hover:bg-[var(--jt-stone-100)] hover:text-[var(--jt-stone-800)]"
+              aria-label={t('إغلاق', 'Close')}
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="mb-6 text-center">
+              <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--jt-olive-50)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                <GitBranch className="h-3 w-3" />
+                {t('صلة القرابة', 'Relation')}
+              </p>
+              <h2
+                className="text-3xl font-bold text-[var(--jt-olive-900)]"
+                style={{ fontFamily: 'var(--jt-font-display)' }}
+              >
+                {data.degrees}° {t('من', '·')} {kinshipLabel(data.degrees, data.path, locale)}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--jt-stone-600)]">
+                {t(
+                  `يمرّ المسار عبر ${Math.max(0, data.path.length - 2)} فردًا بينكما.`,
+                  `The path passes through ${Math.max(0, data.path.length - 2)} ${Math.max(0, data.path.length - 2) === 1 ? 'person' : 'people'} between you.`,
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--jt-stone-50)]/50 p-4">
+              <PathGraph path={data.path} locale={locale} />
+            </div>
+
+            {data.cached && (
+              <p className="mt-4 text-center text-[10px] uppercase tracking-[0.2em] text-[var(--jt-stone-400)]">
+                {t('محفوظ في الذاكرة', 'cached')}
+              </p>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

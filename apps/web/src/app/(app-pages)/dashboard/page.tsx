@@ -1,68 +1,66 @@
-import { PrivateItemsList } from '@/app/(app-pages)/PrivateItemsList';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { T } from '@/components/ui/Typography';
-import { getUserPrivateItems } from '@/data/anon/privateItems';
-import { PlusCircle } from 'lucide-react';
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
+import { DashboardClient, type DashboardData } from './DashboardClient';
+import { DashboardSkeleton } from './DashboardSkeleton';
+import { ensureUserHasDefaultTree } from '@/data/anon/trees';
+import { getTreeSnapshot } from '@/data/anon/treeSnapshot';
+import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
 
-async function UserPrivateItemsListContainer() {
-  const privateItems = await getUserPrivateItems();
-  return <PrivateItemsList privateItems={privateItems} showActions={false} />;
+async function loadDashboard(): Promise<DashboardData> {
+  let treeId: string | null;
+  try {
+    treeId = await ensureUserHasDefaultTree();
+  } catch {
+    redirect('/login');
+  }
+  if (!treeId) redirect('/login');
+
+  const supabase = await createJuthoorSupabaseClient();
+
+  const [treeRes, personsCountRes, personsRecentRes, villagesDiscoverRes, userOriginsRes, snapshot] = await Promise.all([
+    supabase.from('trees').select('id, name, created_at').eq('id', treeId).maybeSingle(),
+    supabase.from('persons').select('id', { count: 'exact', head: true }).eq('tree_id', treeId),
+    supabase
+      .from('persons')
+      .select('id, display_name_ar, display_name_en, gender, created_at')
+      .eq('tree_id', treeId)
+      .order('created_at', { ascending: false })
+      .limit(6),
+    supabase
+      .from('places')
+      .select('id, name_ar, name_en, district_ar, district_en, depopulated_year')
+      .not('depopulated_year', 'is', null)
+      .limit(9),
+    supabase
+      .from('events')
+      .select('place_id, places(name_ar, name_en, district_ar), persons!inner(tree_id)')
+      .eq('persons.tree_id', treeId)
+      .not('place_id', 'is', null)
+      .limit(6),
+    getTreeSnapshot(treeId).catch(() => null),
+  ]);
+
+  return {
+    treeId,
+    treeName: treeRes.data?.name ?? 'شجرة عائلتي',
+    personsCount: personsCountRes.count ?? 0,
+    recentPersons: (personsRecentRes.data ?? []) as DashboardData['recentPersons'],
+    villagesDiscover: (villagesDiscoverRes.data ?? []) as DashboardData['villagesDiscover'],
+    userOrigins: (userOriginsRes.data ?? []) as unknown as DashboardData['userOrigins'],
+    snapshot,
+  };
 }
 
-function ListSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-4 w-64" />
-        </div>
-        <Skeleton className="h-10 w-32" />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {Array(3)
-            .fill(0)
-            .map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
+async function DashboardShell() {
+  const data = await loadDashboard();
+  return <DashboardClient data={data} />;
 }
-
-async function Heading() {
-  'use cache';
-  return (
-    <>
-      <T.H1>Dashboard</T.H1>
-      <Link href="/dashboard/new">
-        <Button className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" /> New Private Item
-        </Button>
-      </Link>
-    </>
-  );
-};
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-      <Heading />
-      <Suspense fallback={<ListSkeleton />}>
-        <UserPrivateItemsListContainer />
-      </Suspense>
-    </div>
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardShell />
+    </Suspense>
   );
 }

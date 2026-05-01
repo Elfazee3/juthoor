@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,31 +9,66 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/components/ui/sidebar";
-import { signOutAction } from "@/data/auth/sign-out";
-import { User } from "@supabase/supabase-js";
-import { ChevronUp, Home, Lock, LogOut, Settings } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTransition } from "react";
-const navigationItems: { title: string; url: string; icon: React.ElementType }[] = [
-  {
-    title: 'Dashboard',
-    url: '/dashboard',
-    icon: Home,
-  },
-  {
-    title: 'Private Items',
-    url: '/private-items',
-    icon: Lock,
-  },
-];
+import {
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from '@/components/ui/sidebar';
+import { signOutAction } from '@/data/auth/sign-out';
+import { useLocale } from '@/contexts/LocaleContext';
+import { LocaleToggle } from '@/components/LocaleToggle';
+import { ModeToggle } from '@/components/ui/mode-toggle';
+import {
+  Bell,
+  ChevronUp,
+  Home,
+  Inbox,
+  LogOut,
+  MapPin,
+  Search,
+  TreePine,
+  Users,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useTransition } from 'react';
 
-
-
-export function AppSidebarContent({ user }: { user: User }) {
+export function AppSidebarContent({
+  userEmail,
+  displayName,
+  displayNameAr,
+  pendingRequestsCount,
+}: {
+  userEmail: string;
+  displayName: string | null;
+  displayNameAr: string | null;
+  pendingRequestsCount: number;
+}) {
+  const { t, locale } = useLocale();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+
+  const navigationItems = [
+    { titleAr: 'لوحة الجذور', titleEn: 'Dashboard', url: '/dashboard', icon: Home, match: (p: string) => p === '/dashboard' },
+    { titleAr: 'شجرة العائلة', titleEn: 'Family Tree', url: '/tree', icon: TreePine, match: (p: string) => p.startsWith('/tree') },
+    { titleAr: 'ابحث عن ذويك', titleEn: 'Find Family', url: '/search', icon: Search, match: (p: string) => p.startsWith('/search') },
+    { titleAr: 'العائلات', titleEn: 'Families', url: '/families', icon: Users, match: (p: string) => p.startsWith('/families') },
+    { titleAr: 'القرى والمدن', titleEn: 'Villages & Cities', url: '/villages', icon: MapPin, match: (p: string) => p.startsWith('/villages') },
+    {
+      titleAr: 'طلبات الوصول',
+      titleEn: 'Access Requests',
+      url: '/dashboard/requests',
+      icon: Inbox,
+      match: (p: string) => p.startsWith('/dashboard/requests'),
+      badge: pendingRequestsCount > 0 ? pendingRequestsCount : undefined,
+    },
+  ];
 
   function handleSignOut() {
     startTransition(async () => {
@@ -41,97 +76,145 @@ export function AppSidebarContent({ user }: { user: User }) {
     });
   }
 
-  const userEmail = user?.email || 'user@example.com';
-  const userName = user?.user_metadata?.name || user.email?.split('@')[0];
-  const userInitials = userName
-    .split(' ')
+  const shownName =
+    locale === 'ar'
+      ? displayNameAr || displayName || userEmail.split('@')[0]
+      : displayName || displayNameAr || userEmail.split('@')[0];
+  const initials = shownName
+    .split(/\s+/)
     .map((n) => n[0])
+    .filter(Boolean)
     .join('')
-    .toUpperCase()
-    .slice(0, 2);
-  return <><SidebarContent>
-    <SidebarGroup>
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-      <SidebarGroupContent>
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-stone-500)]">
+            {t('التنقّل', 'Navigation')}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map((item) => {
+                const isActive = item.match(pathname);
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link href={item.url}>
+                        <Icon className="size-4" />
+                        <span className="flex-1">{t(item.titleAr, item.titleEn)}</span>
+                        {item.badge ? (
+                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--jt-gold-400)] px-1.5 text-[10px] font-bold text-[var(--jt-olive-900)]">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-stone-500)]">
+            {t('التفضيلات', 'Preferences')}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="flex items-center gap-2 px-2 py-1">
+              <LocaleToggle className="flex-1 justify-center" />
+              <ModeToggle />
+            </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
         <SidebarMenu>
-          {navigationItems.map((item) => {
-            const isActive = pathname === item.url;
-            const Icon = item.icon;
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={isActive}>
-                  <Link href={item.url}>
-                    <Icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  </SidebarContent>
-    <SidebarFooter>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-              >
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{userName}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {userEmail}
-                  </span>
-                </div>
-                <ChevronUp className="ml-auto size-4" />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-              side="bottom"
-              align="end"
-              sideOffset={4}
-            >
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
-                      {userInitials}
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-9 w-9 rounded-xl">
+                    <AvatarFallback
+                      className="rounded-xl bg-[var(--jt-olive-100)] text-[var(--jt-olive-800)]"
+                      style={{ fontFamily: 'var(--jt-font-display)' }}
+                    >
+                      {initials || '·'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{userName}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {userEmail}
+                  <div className="grid flex-1 text-start leading-tight">
+                    <span
+                      className="truncate font-semibold text-[var(--jt-stone-800)]"
+                      style={{ fontFamily: locale === 'ar' ? 'var(--jt-font-arabic)' : 'var(--jt-font-latin)' }}
+                    >
+                      {shownName}
                     </span>
+                    <span className="truncate text-[11px] text-[var(--jt-stone-500)]">{userEmail}</span>
                   </div>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} disabled={isPending}>
-                <LogOut className="mr-2 h-4 w-4" />
-                {isPending ? 'Signing out...' : 'Sign out'}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarFooter>
-    <SidebarRail />
-  </>
-
+                  <ChevronUp className="ms-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl"
+                side="top"
+                align="end"
+                sideOffset={6}
+              >
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-2 py-2">
+                    <Avatar className="h-9 w-9 rounded-xl">
+                      <AvatarFallback className="rounded-xl bg-[var(--jt-olive-100)] text-[var(--jt-olive-800)]">
+                        {initials || '·'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 leading-tight">
+                      <span className="truncate text-sm font-semibold">{shownName}</span>
+                      <span className="truncate text-xs text-[var(--jt-stone-500)]">{userEmail}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {pendingRequestsCount > 0 && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/requests" className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-[var(--jt-gold-600)]" />
+                        <span className="flex-1">{t('طلبات معلّقة', 'Pending requests')}</span>
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--jt-gold-400)] px-1.5 text-[10px] font-bold text-[var(--jt-olive-900)]">
+                          {pendingRequestsCount}
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    {t('لوحة الجذور', 'Your roots')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut} disabled={isPending}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {isPending ? t('جارٍ الخروج…', 'Signing out…') : t('تسجيل الخروج', 'Sign out')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </>
+  );
 }
+
+// `userId` prop is accepted for future per-user features but not used in the current render.
+

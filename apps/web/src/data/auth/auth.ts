@@ -135,6 +135,55 @@ export const signInWithProviderAction = actionClient
     return { url: data.url };
   });
 
+// ─────────────── 6-digit OTP code via email (Step 6) ───────────────
+//
+// Two-step flow:
+//   1. `requestEmailOtpAction({ email, mode: 'signup' | 'login' })` → Supabase
+//      sends an email containing a 6-digit code. We do NOT pass
+//      `emailRedirectTo` so the email template falls back to the {{ .Token }}
+//      block instead of the magic-link block.
+//   2. `verifyEmailOtpAction({ email, token })` → exchanges code for a session.
+//      On success the session cookie is set automatically and the caller can
+//      `router.push('/dashboard')`.
+
+const requestEmailOtpSchema = z.object({
+  email: z.string().email(),
+  mode: z.enum(['signup', 'login']).default('signup'),
+  displayName: z.string().trim().min(1).max(80).optional(),
+});
+
+export const requestEmailOtpAction = actionClient
+  .schema(requestEmailOtpSchema)
+  .action(async ({ parsedInput: { email, mode, displayName } }) => {
+    const supabase = await createSupabaseClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: mode === 'signup',
+        // Only stash display_name on first sign-up; do not pass during login.
+        data: mode === 'signup' && displayName ? { display_name: displayName } : undefined,
+      },
+    });
+    if (error) throw new Error(error.message);
+  });
+
+const verifyEmailOtpSchema = z.object({
+  email: z.string().email(),
+  token: z.string().regex(/^\d{6}$/, '6 digits required'),
+});
+
+export const verifyEmailOtpAction = actionClient
+  .schema(verifyEmailOtpSchema)
+  .action(async ({ parsedInput: { email, token } }) => {
+    const supabase = await createSupabaseClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+    if (error) throw new Error(error.message);
+  });
+
 const resetPasswordSchema = z.object({
   email: z.string().email(),
 });

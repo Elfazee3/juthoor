@@ -1,7 +1,6 @@
 'use client';
-import { Email } from '@/components/Auth/Email';
+import { LoginOtpTab } from '@/components/Auth/LoginOtpTab';
 import { EmailAndPassword } from '@/components/Auth/EmailAndPassword';
-import { EmailConfirmationPendingCard } from '@/components/Auth/EmailConfirmationPendingCard';
 import { RedirectingPleaseWaitCard } from '@/components/Auth/RedirectingPleaseWaitCard';
 import { RenderProviders } from '@/components/Auth/RenderProviders';
 import {
@@ -13,7 +12,6 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  signInWithMagicLinkAction,
   signInWithPasswordAction,
   signInWithProviderAction,
 } from '@/data/auth/auth';
@@ -29,9 +27,6 @@ export function Login({
   next?: string;
   nextActionType?: string;
 }) {
-  const [emailSentSuccessMessage, setEmailSentSuccessMessage] = useState<
-    string | null
-  >(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);
   const toastRef = useRef<string | number | undefined>(undefined);
 
@@ -44,32 +39,6 @@ export function Login({
       router.push('/dashboard');
     }
   }
-
-  const { execute: executeMagicLink, status: magicLinkStatus } = useAction(
-    signInWithMagicLinkAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Sending magic link...');
-      },
-      onSuccess: () => {
-        toast.success('A magic link has been sent to your email!', {
-          id: toastRef.current,
-        });
-        toastRef.current = undefined;
-        setEmailSentSuccessMessage('A magic link has been sent to your email!');
-      },
-      onError: (error) => {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : `Send magic link failed ${String(error)}`;
-        toast.error(errorMessage, {
-          id: toastRef.current,
-        });
-        toastRef.current = undefined;
-      },
-    }
-  );
 
   const { execute: executePassword, status: passwordStatus } = useAction(
     signInWithPasswordAction,
@@ -121,36 +90,39 @@ export function Login({
   );
 
   return (
-    <div
-      data-success={emailSentSuccessMessage}
-      className="container data-success:flex items-center data-success:justify-center text-left max-w-lg mx-auto overflow-auto data-success:h-full min-h-[470px]"
-    >
-      {emailSentSuccessMessage ? (
-        <EmailConfirmationPendingCard
-          type={'login'}
-          heading={'Confirmation Link Sent'}
-          message={emailSentSuccessMessage}
-          resetSuccessMessage={setEmailSentSuccessMessage}
-        />
-      ) : redirectInProgress ? (
+    <div className="container items-center text-left max-w-lg mx-auto overflow-auto min-h-[470px]">
+      {redirectInProgress ? (
         <RedirectingPleaseWaitCard
           message="Please wait while we redirect you to your dashboard."
           heading="Redirecting to Dashboard"
         />
       ) : (
         <div className="space-y-8 bg-background p-6 rounded-lg shadow-sm dark:border">
-          <Tabs defaultValue="password" className="md:min-w-[400px]">
+          <Tabs defaultValue="otp" className="md:min-w-[400px]">
             <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="otp">OTP Code</TabsTrigger>
               <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
-              <TabsTrigger value="social-login">Social Login</TabsTrigger>
+              <TabsTrigger value="social-login">Social</TabsTrigger>
             </TabsList>
+            <TabsContent value="otp">
+              <Card className="border-none shadow-none">
+                <CardHeader className="py-6 px-0">
+                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
+                  <CardDescription>
+                    سنرسل رمزًا من ٦ أرقام إلى بريدك. We&apos;ll email you a 6-digit code.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 p-0">
+                  <LoginOtpTab next={next} />
+                </CardContent>
+              </Card>
+            </TabsContent>
             <TabsContent value="password">
               <Card className="border-none shadow-none">
                 <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
+                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
                   <CardDescription>
-                    Login with the account you used to signup.
+                    ادخل بحسابك الذي أنشأته لجذور. Login with your Juthoor account.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 p-0">
@@ -168,29 +140,13 @@ export function Login({
               </Card>
             </TabsContent>
 
-            <TabsContent value="magic-link">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
-                  <CardDescription>
-                    Login with magic link we will send to your email.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <Email
-                    onSubmit={(email) => executeMagicLink({ email, next })}
-                    isLoading={magicLinkStatus === 'executing'}
-                    view="sign-in"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            {/* magic-link tab removed — replaced by the OTP tab above */}
             <TabsContent value="social-login">
               <Card className="border-none shadow-none">
                 <CardHeader className="py-6 px-0">
-                  <CardTitle>Login to NextBase</CardTitle>
+                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
                   <CardDescription>
-                    Login with your social account.
+                    ادخل عبر حسابك على Google أو GitHub.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 p-0">

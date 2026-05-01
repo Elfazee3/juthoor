@@ -1,13 +1,11 @@
 'use client';
 
-import { useAction } from 'next-safe-action/hooks';
-import { useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Mail, ShieldCheck, ArrowLeft, Sparkles } from 'lucide-react';
 
-import { Email } from '@/components/Auth/Email';
-import { EmailAndPassword } from '@/components/Auth/EmailAndPassword';
-import { EmailConfirmationPendingCard } from '@/components/Auth/EmailConfirmationPendingCard';
-import { RenderProviders } from '@/components/Auth/RenderProviders';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -15,166 +13,214 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { OtpCodeInput } from '@/components/Auth/OtpCodeInput';
+import { useLocale } from '@/contexts/LocaleContext';
+import { requestEmailOtpAction, verifyEmailOtpAction } from '@/data/auth/auth';
 
-import {
-  signInWithMagicLinkAction,
-  signInWithProviderAction,
-  signUpAction,
-} from '@/data/auth/auth';
-import type { AuthProvider } from '@/types';
+type Step = 'email' | 'code';
 
-interface SignUpProps {
-  next?: string;
-}
+/**
+ * Two-step OTP sign-up:
+ *   1. Email + display name → server sends a 6-digit code via Supabase Auth.
+ *   2. User types the code → verifyOtp → session cookie → router.push.
+ */
+export function SignUp({ next }: { next?: string }) {
+  const { t, locale, dir } = useLocale();
+  const router = useRouter();
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
-export function SignUp({ next }: SignUpProps) {
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const toastRef = useRef<string | number | undefined>(undefined);
-
-  const { execute: executeMagicLink, status: magicLinkStatus } = useAction(
-    signInWithMagicLinkAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Sending magic link...');
-      },
-      onSuccess: () => {
-        toast.success('A magic link has been sent to your email!', {
-          id: toastRef.current,
-        });
-        toastRef.current = undefined;
-        setSuccessMessage('A magic link has been sent to your email!');
-      },
-      onError: ({ error }) => {
-        const errorMessage = error.serverError ?? 'Failed to send magic link';
-        toast.error(errorMessage, { id: toastRef.current });
-        toastRef.current = undefined;
-      },
+  async function sendCode(e?: React.FormEvent) {
+    e?.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const result = await requestEmailOtpAction({
+        email: email.trim(),
+        mode: 'signup',
+        displayName: displayName.trim() || undefined,
+      });
+      if (result?.serverError) throw new Error(result.serverError);
+      setStep('code');
+      setInfo(t('فحَصْنا بريدك. أدخل الرمز المؤلَّف من ٦ أرقام.', 'Check your email for a 6-digit code.'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send code');
+    } finally {
+      setBusy(false);
     }
-  );
+  }
 
-  const { execute: executeSignUp, status: signUpStatus } = useAction(
-    signUpAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Creating account...');
-      },
-      onSuccess: () => {
-        toast.success('Account created!', { id: toastRef.current });
-        toastRef.current = undefined;
-        setSuccessMessage('A confirmation link has been sent to your email!');
-      },
-      onError: ({ error }) => {
-        const errorMessage = error.serverError ?? 'Failed to create account';
-        toast.error(errorMessage, { id: toastRef.current });
-        toastRef.current = undefined;
-      },
+  async function verify(codeValue: string) {
+    setError(null);
+    setBusy(true);
+    try {
+      const result = await verifyEmailOtpAction({ email: email.trim(), token: codeValue });
+      // next-safe-action returns { data, serverError, validationErrors } — surface the real Supabase message
+      const msg = result?.serverError || result?.validationErrors;
+      if (msg) {
+        const text = typeof msg === 'string' ? msg : 'Invalid or expired code. Try again or resend.';
+        throw new Error(/Token has expired|invalid/i.test(text) ? t('الرمز غير صحيح أو انتهت صلاحيته', 'Code is incorrect or expired. Try again or resend.') : text);
+      }
+      router.push(next ?? '/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('الرمز غير صحيح', 'Invalid code'));
+    } finally {
+      setBusy(false);
     }
-  );
-
-  const { execute: executeProvider, status: providerStatus } = useAction(
-    signInWithProviderAction,
-    {
-      onExecute: () => {
-        toastRef.current = toast.loading('Requesting login...');
-      },
-      onSuccess: ({ data }) => {
-        toast.success('Redirecting...', { id: toastRef.current });
-        toastRef.current = undefined;
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-      },
-      onError: ({ error }) => {
-        const errorMessage = error.serverError ?? 'Failed to login';
-        toast.error(errorMessage, { id: toastRef.current });
-        toastRef.current = undefined;
-      },
-    }
-  );
+  }
 
   return (
-    <div
-      data-success={successMessage}
-      className="container data-success:flex items-center data-success:justify-center text-left max-w-lg mx-auto overflow-auto data-success:h-full min-h-[470px]"
-    >
-      {successMessage ? (
-        <EmailConfirmationPendingCard
-          type="sign-up"
-          heading="Confirmation Link Sent"
-          message={successMessage}
-          resetSuccessMessage={setSuccessMessage}
-        />
-      ) : (
-        <div className="space-y-8 bg-background p-6 rounded-lg shadow-sm dark:border">
-          <Tabs defaultValue="password" className="md:min-w-[400px]">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
-              <TabsTrigger value="social-login">Social Login</TabsTrigger>
-            </TabsList>
+    <div dir={dir} className="w-full max-w-md">
+      <Card className="border-[var(--jt-olive-200)]/60 shadow-[var(--jt-shadow-md)]">
+        <CardHeader className="text-center">
+          <div className="mb-3 flex justify-center">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--jt-olive-700)] text-[var(--jt-stone-50)]">
+              <Sparkles className="h-5 w-5" />
+            </span>
+          </div>
+          <CardTitle
+            className="text-3xl font-bold text-[var(--jt-olive-900)]"
+            style={{ fontFamily: 'var(--jt-font-display)' }}
+          >
+            {step === 'email'
+              ? t('أنشئ حسابك في جذور', 'Create your Juthoor account')
+              : t('تحقّق من بريدك', 'Check your email')}
+          </CardTitle>
+          <CardDescription className="mt-2">
+            {step === 'email'
+              ? t(
+                  'سنرسل لك رمزًا من ٦ أرقام بدلًا من كلمة سر.',
+                  "We'll email you a 6-digit code instead of a password.",
+                )
+              : t(`أرسلنا الرمز إلى ${email}`, `Sent a code to ${email}`)}
+          </CardDescription>
+        </CardHeader>
 
-            <TabsContent value="password">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Register to NextBase</CardTitle>
-                  <CardDescription>
-                    Create an account with your email and password
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <EmailAndPassword
-                    isLoading={signUpStatus === 'executing'}
-                    onSubmit={(data) => {
-                      executeSignUp({ ...data, next });
+        <CardContent>
+          <AnimatePresence mode="wait" initial={false}>
+            {step === 'email' ? (
+              <motion.form
+                key="email"
+                onSubmit={sendCode}
+                initial={{ opacity: 0, x: dir === 'rtl' ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: dir === 'rtl' ? -20 : 20 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <Label htmlFor="display-name">{t('اسم العرض', 'Display name')}</Label>
+                  <Input
+                    id="display-name"
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder={t('يوسف العجرمي', 'Yousef Al-Ajrami')}
+                    autoComplete="name"
+                    required
+                    style={{ fontFamily: locale === 'ar' ? 'var(--jt-font-arabic)' : 'var(--jt-font-latin)' }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">{t('البريد الإلكتروني', 'Email address')}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-xl bg-[var(--jt-terra-50)] p-3 text-sm text-[var(--jt-terra-700)]">{error}</div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={busy || !email.trim() || !displayName.trim()}
+                  className="w-full bg-[var(--jt-olive-700)] hover:bg-[var(--jt-olive-800)]"
+                >
+                  {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Mail className="me-2 h-4 w-4" />}
+                  {t('أرسل الرمز', 'Send code')}
+                </Button>
+
+                <p className="text-center text-xs text-[var(--jt-stone-500)]">
+                  {t('لديك حساب؟', 'Already have an account?')}{' '}
+                  <a href="/login" className="font-semibold text-[var(--jt-olive-700)] underline underline-offset-4 hover:text-[var(--jt-olive-900)]">
+                    {t('تسجيل الدخول', 'Sign in')}
+                  </a>
+                </p>
+              </motion.form>
+            ) : (
+              <motion.div
+                key="code"
+                initial={{ opacity: 0, x: dir === 'rtl' ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: dir === 'rtl' ? -20 : 20 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-5"
+              >
+                <OtpCodeInput
+                  value={code}
+                  onChange={setCode}
+                  onComplete={verify}
+                  disabled={busy}
+                />
+
+                {info && !error && (
+                  <p className="text-center text-xs text-[var(--jt-stone-500)]">{info}</p>
+                )}
+                {error && (
+                  <div className="rounded-xl bg-[var(--jt-terra-50)] p-3 text-center text-sm text-[var(--jt-terra-700)]">{error}</div>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={() => verify(code)}
+                  disabled={busy || code.length !== 6}
+                  className="w-full bg-[var(--jt-olive-700)] hover:bg-[var(--jt-olive-800)]"
+                >
+                  {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="me-2 h-4 w-4" />}
+                  {t('تحقّق وادخل', 'Verify & sign in')}
+                </Button>
+
+                <div className="flex items-center justify-between text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('email');
+                      setCode('');
+                      setError(null);
                     }}
-                    view="sign-up"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="magic-link">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Register to NextBase</CardTitle>
-                  <CardDescription>
-                    Create an account with magic link we will send to your email
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <Email
-                    onSubmit={(email) => executeMagicLink({ email, next })}
-                    isLoading={magicLinkStatus === 'executing'}
-                    view="sign-up"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="social-login">
-              <Card className="border-none shadow-none">
-                <CardHeader className="py-6 px-0">
-                  <CardTitle>Register to NextBase</CardTitle>
-                  <CardDescription>
-                    Register with your social account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 p-0">
-                  <RenderProviders
-                    providers={['google', 'github', 'twitter']}
-                    isLoading={providerStatus === 'executing'}
-                    onProviderLoginRequested={(
-                      provider: Extract<
-                        AuthProvider,
-                        'google' | 'github' | 'twitter'
-                      >
-                    ) => executeProvider({ provider, next })}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
+                    className="inline-flex items-center gap-1 font-semibold text-[var(--jt-stone-500)] hover:text-[var(--jt-olive-700)]"
+                  >
+                    <ArrowLeft className="h-3 w-3 rtl:rotate-180" />
+                    {t('عدّل البريد', 'Change email')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => sendCode()}
+                    disabled={busy}
+                    className="font-semibold text-[var(--jt-olive-700)] hover:text-[var(--jt-olive-900)] disabled:opacity-50"
+                  >
+                    {t('أرسل رمزًا جديدًا', 'Resend code')}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
     </div>
   );
 }
