@@ -33,29 +33,46 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  const protectedPages = [
-    '/dashboard',
-    '/private-item',
-    '/private-items',
-    '/items',
-    '/item',
+  const pathname = request.nextUrl.pathname;
+
+  // Routes that don't require authentication. Everything else under
+  // `(app-pages)` (dashboard, tree, families, villages, search, ...) is
+  // gated. Keeping the allowlist here keeps middleware in sync with the
+  // server-side AuthGuard so visitors never see a flash of protected UI.
+  const publicExact = new Set(['/']);
+  const publicPrefixes = [
+    '/about',
+    '/login',
+    '/sign-up',
+    '/forgot-password',
+    '/update-password',
+    '/auth',
   ];
+  const isPublic =
+    publicExact.has(pathname) ||
+    publicPrefixes.some(
+      (p) => pathname === p || pathname.startsWith(p + '/'),
+    );
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // if user doesn't exist and the page is protected, redirect to login
-  if (
-    !user &&
-    protectedPages.some((page) =>
-      request.nextUrl.pathname === page ||
-      request.nextUrl.pathname.startsWith(page + '/')
-    )
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Already authenticated visitors hitting /login or /sign-up should bounce
+  // straight to the dashboard. Forgot-password is left alone so logged-in
+  // users can still reset.
+  if (user && (pathname === '/login' || pathname === '/sign-up')) {
+    const url = request.nextUrl.clone();
+    const next = request.nextUrl.searchParams.get('next');
+    url.pathname = next && next.startsWith('/') ? next : '/dashboard';
+    url.search = '';
     return NextResponse.redirect(url);
   }
 

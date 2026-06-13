@@ -25,3 +25,11 @@ yarn-error.log*
 # playwright
 test-results/
 playwright/.auth/
+
+# defensive: never commit env backups or our deploy tarball
+.env.local.*
+.env.*-backup
+.deploy.tgz
+
+# local dev logs
+dev3000.log

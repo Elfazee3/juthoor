@@ -1,10 +1,21 @@
 /**
  * Juthoor Database Types — GEDCOM 7 Aligned
- * Generated from Supabase schema (2026-04-16)
  *
- * To regenerate:
- *   npx supabase login
- *   npx supabase gen types typescript --project-id nlufpicjdeeqcgepewdg > src/types/database.ts
+ * Two sections:
+ *
+ *   1) Exported domain interfaces (Person, Family, etc.) — convenient
+ *      shapes for application code. Fields are readonly because domain
+ *      objects are treated as immutable.
+ *
+ *   2) The Supabase-compatible `Database` type — follows the exact
+ *      shape produced by `supabase gen types typescript`. This is the
+ *      type we parameterise `createServerClient<Database>` with; it
+ *      MUST use mutable Row/Insert/Update shapes so Postgrest's
+ *      generic inference works.
+ *
+ * To regenerate when the schema changes:
+ *   npx supabase gen types typescript --project-id nlufpicjdeeqcgepewdg \
+ *     --schema public > apps/web/src/types/database.ts
  */
 
 export type Json =
@@ -19,33 +30,43 @@ export type Json =
 // Enums
 // ============================================================================
 
-/** GEDCOM g7:enumset-SEX */
 export type GenderType = 'M' | 'F' | 'X' | 'U';
 
-/** GEDCOM event tags */
 export type EventType =
   | 'BIRT' | 'DEAT' | 'BURI' | 'BAPM' | 'CHR'
   | 'EMIG' | 'IMMI' | 'NATU' | 'CENS' | 'RESI' | 'EVEN'
   | 'MARR' | 'DIV' | 'ANUL' | 'ENGA' | 'MARS' | 'MARL'
   | 'MARB' | 'MARC' | 'DIVF' | 'SEPA';
 
-/** GEDCOM g7:enumset-NAME-TYPE */
 export type NameType = 'birth' | 'married' | 'immigrant' | 'aka' | 'professional' | 'maiden';
 
-/** GEDCOM pedigree type (g7:PEDI) */
 export type PedigreeType = 'birth' | 'adopted' | 'foster' | 'sealing' | 'other';
 
-/** Fellegi-Sunter match status */
 export type MatchStatus = 'pending' | 'auto_merged' | 'admin_approved' | 'admin_rejected' | 'deferred';
 
-/** Tree access role */
 export type TreeRole = 'owner' | 'collaborator' | 'read_only';
 
+export type TreeMemberStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
+
+export type AttachmentKind = 'photo' | 'document';
+
+export type AttachmentTag =
+  | 'portrait'
+  | 'id_card'
+  | 'passport'
+  | 'birth_cert'
+  | 'death_cert'
+  | 'marriage_cert'
+  | 'land_deed'
+  | 'family_card'
+  | 'letter'
+  | 'old_photo'
+  | 'other';
+
 // ============================================================================
-// Table Row Types
+// Domain-level interfaces (readonly — for application reads)
 // ============================================================================
 
-/** GEDCOM PLACE_STRUCTURE — bilingual places with coordinates */
 export interface Place {
   readonly id: string;
   readonly name_ar: string;
@@ -62,7 +83,6 @@ export interface Place {
   readonly updated_at: string;
 }
 
-/** Family tree container */
 export interface Tree {
   readonly id: string;
   readonly name: string;
@@ -75,7 +95,6 @@ export interface Tree {
   readonly updated_at: string;
 }
 
-/** Tree access control */
 export interface TreeMember {
   readonly id: string;
   readonly tree_id: string;
@@ -85,7 +104,6 @@ export interface TreeMember {
   readonly accepted_at: string | null;
 }
 
-/** GEDCOM INDIVIDUAL_RECORD (INDI) */
 export interface Person {
   readonly id: string;
   readonly tree_id: string;
@@ -100,7 +118,6 @@ export interface Person {
   readonly updated_at: string;
 }
 
-/** GEDCOM PERSONAL_NAME_STRUCTURE */
 export interface PersonName {
   readonly id: string;
   readonly person_id: string;
@@ -117,7 +134,6 @@ export interface PersonName {
   readonly created_at: string;
 }
 
-/** GEDCOM FAMILY_RECORD (FAM) */
 export interface Family {
   readonly id: string;
   readonly tree_id: string;
@@ -129,7 +145,6 @@ export interface Family {
   readonly updated_at: string;
 }
 
-/** GEDCOM FAM.CHIL — child-to-family link */
 export interface FamilyChild {
   readonly id: string;
   readonly family_id: string;
@@ -139,7 +154,6 @@ export interface FamilyChild {
   readonly created_at: string;
 }
 
-/** GEDCOM EVENT_DETAIL — unified person + family events */
 export interface Event {
   readonly id: string;
   readonly person_id: string | null;
@@ -156,7 +170,6 @@ export interface Event {
   readonly created_at: string;
 }
 
-/** Fellegi-Sunter matching results */
 export interface Match {
   readonly id: string;
   readonly person_a_id: string;
@@ -172,7 +185,6 @@ export interface Match {
   readonly updated_at: string;
 }
 
-/** User profile (extends Supabase Auth) */
 export interface Profile {
   readonly id: string;
   readonly display_name: string | null;
@@ -185,110 +197,360 @@ export interface Profile {
 }
 
 // ============================================================================
-// Insert Types (for creating new rows — omit server-generated fields)
+// Supabase-compatible Database type (mutable — required by Postgrest generics)
 // ============================================================================
 
-export type PlaceInsert = Omit<Place, 'id' | 'created_at' | 'updated_at'> & {
-  readonly id?: string;
+/** Non-readonly shape used by Supabase generics. */
+type MutablePlace = {
+  id: string;
+  name_ar: string;
+  name_en: string | null;
+  place_type: string;
+  district_ar: string | null;
+  district_en: string | null;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  depopulated_year: number | null;
+  is_depopulated: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
-export type TreeInsert = Omit<Tree, 'id' | 'created_at' | 'updated_at' | 'is_public'> & {
-  readonly id?: string;
-  readonly is_public?: boolean;
+type MutableTree = {
+  id: string;
+  name: string;
+  description: string | null;
+  owner_id: string;
+  is_public: boolean;
+  gedcom_filename: string | null;
+  gedcom_imported_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
-export type PersonInsert = Omit<Person, 'id' | 'created_at' | 'updated_at' | 'gender' | 'is_living'> & {
-  readonly id?: string;
-  readonly gender?: GenderType;
-  readonly is_living?: boolean;
+type MutableTreeMember = {
+  id: string;
+  tree_id: string;
+  user_id: string;
+  role: TreeRole;
+  status: TreeMemberStatus;
+  invited_at: string;
+  accepted_at: string | null;
+  requested_at: string;
+  requested_role: TreeRole | null;
+  requester_note: string | null;
+  proof_url: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
 };
 
-export type PersonNameInsert = Omit<PersonName, 'id' | 'created_at' | 'is_primary' | 'name_type' | 'lang'> & {
-  readonly id?: string;
-  readonly is_primary?: boolean;
-  readonly name_type?: NameType;
-  readonly lang?: string;
+type MutablePerson = {
+  id: string;
+  tree_id: string;
+  gender: GenderType;
+  display_name_ar: string | null;
+  display_name_en: string | null;
+  gedcom_xref: string | null;
+  is_living: boolean;
+  notes: string | null;
+  primary_photo_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
-export type FamilyInsert = Omit<Family, 'id' | 'created_at' | 'updated_at'> & {
-  readonly id?: string;
+type MutablePersonAttachment = {
+  id: string;
+  person_id: string;
+  kind: AttachmentKind;
+  tag: AttachmentTag;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  caption_ar: string | null;
+  caption_en: string | null;
+  year: number | null;
+  uploaded_by: string | null;
+  created_at: string;
 };
 
-export type FamilyChildInsert = Omit<FamilyChild, 'id' | 'created_at' | 'pedigree'> & {
-  readonly id?: string;
-  readonly pedigree?: PedigreeType;
+type MutableMatchPath = {
+  source_person_id: string;
+  target_person_id: string;
+  degrees: number;
+  path_json: Json;
+  computed_at: string;
 };
 
-export type EventInsert = Omit<Event, 'id' | 'created_at'> & {
-  readonly id?: string;
+type MutablePersonName = {
+  id: string;
+  person_id: string;
+  name_type: NameType;
+  is_primary: boolean;
+  lang: string;
+  prefix: string | null;
+  given_name: string | null;
+  nickname: string | null;
+  surname_prefix: string | null;
+  surname: string | null;
+  suffix: string | null;
+  gedcom_name: string | null;
+  created_at: string;
 };
 
-export type MatchInsert = Omit<Match, 'id' | 'created_at' | 'updated_at' | 'status' | 'found_by'> & {
-  readonly id?: string;
-  readonly status?: MatchStatus;
-  readonly found_by?: string;
+type MutableFamily = {
+  id: string;
+  tree_id: string;
+  partner1_id: string | null;
+  partner2_id: string | null;
+  gedcom_xref: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
-// ============================================================================
-// Database Schema Type (Supabase-compatible)
-// ============================================================================
+type MutableFamilyChild = {
+  id: string;
+  family_id: string;
+  child_id: string;
+  pedigree: PedigreeType;
+  birth_order: number | null;
+  created_at: string;
+};
 
-export interface Database {
+type MutableEvent = {
+  id: string;
+  person_id: string | null;
+  family_id: string | null;
+  event_type: EventType;
+  date_value: string | null;
+  date_sort: number | null;
+  date_year: number | null;
+  place_id: string | null;
+  place_name: string | null;
+  description: string | null;
+  cause: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+type MutableMatch = {
+  id: string;
+  person_a_id: string;
+  person_b_id: string;
+  confidence_score: number;
+  status: MatchStatus;
+  found_by: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  score_breakdown: Json | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type MutableProfile = {
+  id: string;
+  display_name: string | null;
+  display_name_ar: string | null;
+  avatar_url: string | null;
+  preferred_language: 'ar' | 'en';
+  is_admin: boolean;
+  self_person_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Database = {
   public: {
     Tables: {
       places: {
-        Row: Place;
-        Insert: PlaceInsert;
-        Update: Partial<PlaceInsert>;
+        Row: MutablePlace;
+        Insert: Partial<MutablePlace> & { id?: string; name_ar: string };
+        Update: Partial<MutablePlace>;
+        Relationships: [];
       };
       trees: {
-        Row: Tree;
-        Insert: TreeInsert;
-        Update: Partial<TreeInsert>;
+        Row: MutableTree;
+        Insert: Partial<MutableTree> & { name: string; owner_id: string };
+        Update: Partial<MutableTree>;
+        Relationships: [];
       };
       tree_members: {
-        Row: TreeMember;
-        Insert: Omit<TreeMember, 'id' | 'invited_at'> & { id?: string; invited_at?: string };
-        Update: Partial<TreeMember>;
+        Row: MutableTreeMember;
+        Insert: Partial<MutableTreeMember> & {
+          tree_id: string;
+          user_id: string;
+        };
+        Update: Partial<MutableTreeMember>;
+        Relationships: [];
       };
       persons: {
-        Row: Person;
-        Insert: PersonInsert;
-        Update: Partial<PersonInsert>;
+        Row: MutablePerson;
+        Insert: Partial<MutablePerson> & { tree_id: string };
+        Update: Partial<MutablePerson>;
+        Relationships: [];
       };
       person_names: {
-        Row: PersonName;
-        Insert: PersonNameInsert;
-        Update: Partial<PersonNameInsert>;
+        Row: MutablePersonName;
+        Insert: Partial<MutablePersonName> & { person_id: string };
+        Update: Partial<MutablePersonName>;
+        Relationships: [];
       };
       families: {
-        Row: Family;
-        Insert: FamilyInsert;
-        Update: Partial<FamilyInsert>;
+        Row: MutableFamily;
+        Insert: Partial<MutableFamily> & { tree_id: string };
+        Update: Partial<MutableFamily>;
+        Relationships: [];
       };
       family_children: {
-        Row: FamilyChild;
-        Insert: FamilyChildInsert;
-        Update: Partial<FamilyChildInsert>;
+        Row: MutableFamilyChild;
+        Insert: Partial<MutableFamilyChild> & {
+          family_id: string;
+          child_id: string;
+        };
+        Update: Partial<MutableFamilyChild>;
+        Relationships: [];
       };
       events: {
-        Row: Event;
-        Insert: EventInsert;
-        Update: Partial<EventInsert>;
+        Row: MutableEvent;
+        Insert: Partial<MutableEvent> & { event_type: EventType };
+        Update: Partial<MutableEvent>;
+        Relationships: [];
       };
       matches: {
-        Row: Match;
-        Insert: MatchInsert;
-        Update: Partial<MatchInsert>;
+        Row: MutableMatch;
+        Insert: Partial<MutableMatch> & {
+          person_a_id: string;
+          person_b_id: string;
+          confidence_score: number;
+        };
+        Update: Partial<MutableMatch>;
+        Relationships: [];
       };
       profiles: {
-        Row: Profile;
-        Insert: Omit<Profile, 'created_at' | 'updated_at' | 'preferred_language' | 'is_admin'> & {
-          preferred_language?: 'ar' | 'en';
-          is_admin?: boolean;
-        };
-        Update: Partial<Profile>;
+        Row: MutableProfile;
+        Insert: Partial<MutableProfile> & { id: string };
+        Update: Partial<MutableProfile>;
+        Relationships: [];
       };
+      person_attachments: {
+        Row: MutablePersonAttachment;
+        Insert: Partial<MutablePersonAttachment> & {
+          person_id: string;
+          kind: AttachmentKind;
+          mime_type: string;
+          size_bytes: number;
+          storage_path: string;
+        };
+        Update: Partial<MutablePersonAttachment>;
+        Relationships: [];
+      };
+      match_paths: {
+        Row: MutableMatchPath;
+        Insert: Partial<MutableMatchPath> & {
+          source_person_id: string;
+          target_person_id: string;
+          degrees: number;
+          path_json: Json;
+        };
+        Update: Partial<MutableMatchPath>;
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      create_person_with_primary_name: {
+        Args: {
+          p_tree_id: string;
+          p_gender: GenderType;
+          p_name_type?: NameType;
+          p_lang?: string;
+          p_given_name?: string | null;
+          p_surname?: string | null;
+          p_display_name_ar?: string | null;
+          p_display_name_en?: string | null;
+          p_birth_year?: number | null;
+          p_death_year?: number | null;
+          p_place_of_origin_id?: string | null;
+          p_is_placeholder?: boolean;
+        };
+        Returns: { person_id: string; name_id: string }[];
+      };
+      search_master_tree: {
+        Args: {
+          q_free?: string | null;
+          q_given?: string | null;
+          q_surname?: string | null;
+          q_father?: string | null;
+          q_mother?: string | null;
+          q_gender?: GenderType | null;
+          q_birth_year?: number | null;
+          q_year_window?: number | null;
+          q_place_id?: string | null;
+          lim?: number | null;
+        };
+        Returns: Array<{
+          person_id: string;
+          tree_id: string;
+          tree_name: string;
+          tree_is_public: boolean;
+          tree_is_accessible: boolean;
+          display_name_ar: string | null;
+          display_name_en: string | null;
+          primary_given: string | null;
+          primary_surname: string | null;
+          gender: GenderType;
+          birth_year: number | null;
+          origin_place_id: string | null;
+          origin_name_ar: string | null;
+          origin_name_en: string | null;
+          score: number;
+          breakdown: Json;
+        }>;
+      };
+      compute_degrees: {
+        Args: { p_source: string; p_target: string };
+        Returns: Json;
+      };
+      can_access_tree: { Args: { p_tree_id: string }; Returns: boolean };
+      can_write_tree: { Args: { p_tree_id: string }; Returns: boolean };
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      is_tree_owner: {
+        Args: { p_tree_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      is_tree_member: {
+        Args: { p_tree_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      is_tree_collaborator: {
+        Args: { p_tree_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      request_tree_access: {
+        Args: {
+          p_tree_id: string;
+          p_role: TreeRole;
+          p_proof_url: string;
+          p_note?: string | null;
+        };
+        Returns: MutableTreeMember;
+      };
+      approve_tree_access_request: {
+        Args: { p_member_id: string };
+        Returns: MutableTreeMember;
+      };
+      reject_tree_access_request: {
+        Args: { p_member_id: string; p_reason?: string | null };
+        Returns: MutableTreeMember;
+      };
+      arabic_phonetic: { Args: { txt: string }; Returns: string };
+      normalize_arabic: { Args: { txt: string }; Returns: string };
     };
     Enums: {
       gender_type: GenderType;
@@ -297,6 +559,12 @@ export interface Database {
       pedigree_type: PedigreeType;
       match_status: MatchStatus;
       tree_role: TreeRole;
+      tree_member_status: TreeMemberStatus;
+      attachment_kind: AttachmentKind;
+      attachment_tag: AttachmentTag;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
-}
+};

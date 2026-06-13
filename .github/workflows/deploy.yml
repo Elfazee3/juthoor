@@ -1,0 +1,73 @@
+name: Deploy
+
+# Production deploy — fires only on push to `main` AND only after CI is green.
+# Pulls the repo on the VPS, builds, and restarts the systemd unit.
+#
+# Required GitHub Secrets:
+#   SSH_HOST           80.241.218.49 (or your domain once registered)
+#   SSH_USER           juthoor (the dedicated deploy user — NOT yousef)
+#   SSH_PRIVATE_KEY    OpenSSH private key with access to /opt/juthoor/app
+#   SSH_KNOWN_HOSTS    output of `ssh-keyscan -H 80.241.218.49`
+#
+# Required GitHub Variables (non-secret):
+#   DEPLOY_PATH        /opt/juthoor/app  (default if unset)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:   # allow manual trigger from the Actions UI
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false   # never cancel an in-flight deploy
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Pull, build, restart
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/juthoor/app' }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" bash -se <<EOF
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            echo "▶ Fetching latest..."
+            git fetch --depth=1 origin main
+            git reset --hard origin/main
+            echo "▶ Installing deps..."
+            pnpm install --frozen-lockfile --prefer-offline
+            echo "▶ Building..."
+            pnpm --filter web build
+            echo "▶ Restarting service..."
+            sudo /usr/bin/systemctl restart juthoor
+            echo "▶ Health check..."
+            sleep 4
+            curl -fsS http://127.0.0.1:3000/ > /dev/null || (echo "Health check failed" && sudo /usr/bin/journalctl -u juthoor -n 50 && exit 1)
+            echo "✓ Deployed $(git rev-parse --short HEAD) at $(date -u)"
+          EOF
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Deploy failed. Check the SSH step above; service may need manual rollback."
+          # Slack/Discord webhook can be added here later

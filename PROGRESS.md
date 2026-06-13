@@ -52,34 +52,49 @@
 - [x] Generate TypeScript types from schema (apps/web/src/types/database.ts)
 
 ### Step 3: Tree Builder
-- [ ] "Add Person" form — fields: Arabic name, English name, birth year, death year, village, gender
-- [ ] Field tooltips on hover (FRS: "hovering over any field shows a pop-up description")
-- [ ] 360° person view — centre: person name, up: parents, down: children, right: siblings, left: spouse/partner
-- [ ] Click on any person in 360° view → that person becomes the new centre focus (FRS: Navigation)
+- [x] "Add Person" form — fields: Arabic name, English name, birth year, death year, village, gender
+- [x] Field tooltips on hover (FRS: "hovering over any field shows a pop-up description")
+- [x] 360° person view — centre: person name, up: parents, down: children, right: siblings, left: spouse/partner
+- [x] Click on any person in 360° view → that person becomes the new centre focus (FRS: Navigation)
 - [ ] Default surname = father's surname (FRS: auto-inherit)
 - [ ] Default village/origin = father's origin (FRS: auto-inherit)
-- [ ] Female entries use maiden name, not married name (FRS requirement)
-- [ ] If mother is unknown → system inserts placeholder "Female 1" linked as spouse to father
-- [ ] When mother details added later → prompt user to link each child to the mother
+- [x] Female entries use maiden name, not married name (FRS requirement)
+- [x] If mother is unknown → system inserts placeholder "Female 1" linked as spouse to father (auto-created by `addRelativeAction`)
+- [x] When mother details added later → prompt user to link each child to the mother (`UpgradePlaceholderDialog` + affected-children review)
 - [ ] Children entry form: tabular with dropdowns for surname, mother name, origin
-- [ ] Validation: each child must be linked to a mother
-- [ ] Multi-spouse validation: if individual married more than once, validate correct mother per child
-- [ ] Hover over person name → pop-up summary of that person
-- [ ] GEDCOM import — parse `.ged` files and populate the tree (uses `parse-gedcom`)
-- [ ] GEDCOM export — download tree as `.ged` file
-- [ ] Tree rendered visually on screen (uses `family-chart` + `react-family-tree`)
-- [ ] Tree is saved to Supabase in real time
+- [x] Validation: each child must be linked to a mother (FRS rule 11, enforced in `zodSchemas` + server action)
+- [x] Multi-spouse validation: if individual married more than once, validate correct mother per child (mother picker in Add form + server check)
+- [x] Hover over person name → pop-up summary of that person
+- [x] GEDCOM import — parse `.ged` files and populate the tree (uses `parse-gedcom`, 5 MB cap)
+- [x] GEDCOM export — download tree as `.ged` file
+- [x] Tree rendered visually on screen (relatives-tree layout + custom canvas chart)
+- [x] Tree is saved to Supabase in real time
+
+### Step 3.5: Tree UX Overhaul — Ancestry-parity (2026-06-12)
+> Benchmarked the real Ancestry.com tree experience (10,628-person Palestinian tree) in a live browser session and replicated its user journey in Juthoor.
+
+- [x] **Atomic add-relative backend** — `addRelativeAction` creates person + family link in one server action (plan → create → link → compensating rollback). Fixed the "person created but never linked / invisible in chart" bug
+- [x] Fixed `upgradePlaceholderPersonAction` writing nonexistent persons columns — years/place now write to `events` (BIRT/DEAT)
+- [x] Life years + birth village loaded into the chart snapshot (BIRT/DEAT events) — cards show "1950 – 2020 • القرية"
+- [x] **Chart redesign**: translate/scale camera (drag-pan, wheel-zoom toward cursor), auto-center on focus, toolbar (zoom %, fit, re-center, home person), dot-grid canvas, generation rail labels (الوالدان / الذات والأشقاء / الأبناء)
+- [x] **Connectors drawn from family data** (marriage line + stem→bus→drops) — every line snaps exactly to card edges
+- [x] **Phantom-partner layout fix** — single-parent families no longer drop branches; the missing parent renders as a ghost card «+ أضف الأم» (dashed marriage line), click opens the add-spouse sheet
+- [x] **Ghost-repair on save** — adding a spouse fills the empty family slot so existing children gain their second parent (no duplicate families)
+- [x] Card redesign: gender accent bar, gradient avatar initial, placeholder badge «مؤقت», focus/selected rings; hover `+` buttons open the inline add sheet (`?selected=&add=`)
+- [x] **«كل الأشخاص» list view** (`/tree/[treeId]/people`) — Ancestry "List of all people": name search (ar/en), filter chips (gender / living / deceased / placeholder), Name|Birth|Death columns, pagination, row click jumps the chart to that person
+- [x] **«ابحث في الشجرة» panel** — find-in-tree sidebar: live name search over the snapshot, current-focus quick row, jump-to-person re-roots the chart, link to the full list
+- [x] Auth hardening: client-only render of auth forms (kills extension-injected `fdprocessedid` hydration crashes), OTP copy corrected to 8 digits, Password tab is now the default login method
 
 ### Step 4: Family Finder
-- [ ] Search form: filter by Name, Phonetic Name, Surname, Phonetic Surname
-- [ ] Search form: filter by Date of Birth, Place of Birth, Date of Death, Place of Death, Origin
-- [ ] Phonetic search — handles Arabic name variants (Ibrahim, Ibraheem, Abraham, etc.) via `jslingua`
-- [ ] Arabic ↔ English language toggle on homepage (FRS: General)
+- [x] Search form: filter by Name, Phonetic Name, Surname, Phonetic Surname
+- [x] Search form: filter by Date of Birth (± year window), Place of Birth / Origin
+- [x] Phonetic search — handles Arabic name variants (via `arabic_phonetic` + `normalize_arabic` Postgres functions)
+- [x] Arabic ↔ English language toggle (LocaleContext)
 - [ ] Phonetic conversion table: translates English input → Arabic canonical form
-- [ ] Search results from the Master Tree (all connected trees)
-- [ ] If search finds a match → show "degrees of separation" path between user and matched person
-- [ ] Proof-of-family upload when requesting Write access to a tree (FRS: Permissions)
-- [ ] Request access flow: authenticated user requests Read/Write/Edit for a specific tree
+- [x] Search results from the Master Tree (all connected trees — `search_master_tree` RPC with score breakdown)
+- [x] If search finds a match → show "degrees of separation" path between user and matched person (`compute_degrees` + PathGraph)
+- [x] Proof-of-family upload when requesting Write access to a tree (FRS: Permissions)
+- [x] Request access flow: authenticated user requests Read/Write access for a specific tree (request → owner approves/rejects in dashboard)
 
 ### Step 5: Matching Engine (Fellegi-Sunter)
 - [ ] Matching runs as end-of-day batch process (not real time — FRS requirement)

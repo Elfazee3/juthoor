@@ -1,0 +1,378 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { Sparkles, Users } from 'lucide-react';
+import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  upgradePlaceholderPersonAction,
+  deletePersonAction,
+} from '@/data/user/persons';
+import { removeChildAction } from '@/data/user/families';
+import type { Person } from '@/types/database';
+
+import { FieldHint } from './FieldHint';
+import { PlaceCombobox } from './PlaceCombobox';
+
+const formSchema = z
+  .object({
+    arGivenName: z.string().trim().max(100).optional(),
+    arSurname: z.string().trim().max(100).optional(),
+    enGivenName: z.string().trim().max(100).optional(),
+    enSurname: z.string().trim().max(100).optional(),
+    gender: z.enum(['M', 'F']),
+    birthYear: z.number().int().optional(),
+    deathYear: z.number().int().optional(),
+    placeOfOriginId: z.string().uuid().optional(),
+  })
+  .refine(
+    (v) => Boolean(v.arGivenName) || Boolean(v.enGivenName),
+    { path: ['arGivenName'], message: 'الاسم الأول مطلوب' }
+  );
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface Props {
+  readonly treeId: string;
+  readonly placeholder: Person;
+  readonly allPersons: readonly Person[];
+}
+
+/**
+ * Dialog that turns a placeholder person (e.g. "Female 1") into a
+ * real one. On success, surfaces existing children linked through
+ * the placeholder so the user can confirm — or unlink any that
+ * shouldn't belong to her (multi-spouse cleanup).
+ */
+export function UpgradePlaceholderDialog({
+  treeId,
+  placeholder,
+  allPersons,
+}: Props) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [affectedChildren, setAffectedChildren] = useState<
+    readonly { id: string; familyId: string }[]
+  >([]);
+  const [phase, setPhase] = useState<'edit' | 'confirm'>('edit');
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { gender: placeholder.gender === 'F' ? 'F' : 'M' },
+  });
+
+  const onSubmit = (values: FormValues) => {
+    startTransition(async () => {
+      const result = await upgradePlaceholderPersonAction({
+        placeholderId: placeholder.id,
+        treeId,
+        ...values,
+      });
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+      const children = result?.data?.affectedChildren ?? [];
+      setAffectedChildren(children);
+      toast.success('تمّ تحديث بيانات الشخص');
+      if (children.length > 0) {
+        setPhase('confirm');
+      } else {
+        setOpen(false);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleUnlink = (childId: string, familyId: string) => {
+    startTransition(async () => {
+      const result = await removeChildAction({ childId, familyId });
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+      setAffectedChildren((prev) =>
+        prev.filter((c) => c.id !== childId)
+      );
+      toast.success('تمّ فك الرابطة');
+    });
+  };
+
+  const handleDone = () => {
+    setOpen(false);
+    setPhase('edit');
+    router.refresh();
+  };
+
+  const childrenResolved = affectedChildren.map((c) => ({
+    ...c,
+    person: allPersons.find((p) => p.id === c.id),
+  }));
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <Sparkles className="h-4 w-4" /> تحويل إلى شخص حقيقي
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent dir="rtl" className="max-w-xl">
+        {phase === 'edit' ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>ترقية الشخص المؤقّت</DialogTitle>
+              <DialogDescription>
+                أدخل بيانات هذا الشخص الحقيقية. سيتم تحديث الرابطات
+                القائمة دون فقدان الأبناء.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="grid gap-4"
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="arGivenName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <FormLabel>الاسم الأول</FormLabel>
+                          <FieldHint fieldKey="arGivenName" />
+                        </div>
+                        <FormControl>
+                          <Input dir="rtl" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="arSurname"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <FormLabel>اسم العائلة (للمرأة: اسم الميلاد)</FormLabel>
+                          <FieldHint fieldKey="arSurname" />
+                        </div>
+                        <FormControl>
+                          <Input dir="rtl" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>الجنس</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="M">ذكر</SelectItem>
+                            <SelectItem value="F">أنثى</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="birthYear"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سنة الميلاد</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="1950"
+                            value={field.value ?? ''}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === ''
+                                  ? undefined
+                                  : Number(e.target.value)
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="deathYear"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>سنة الوفاة</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="—"
+                            value={field.value ?? ''}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === ''
+                                  ? undefined
+                                  : Number(e.target.value)
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="placeOfOriginId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>القرية / المدينة الأصلية</FormLabel>
+                      <FormControl>
+                        <PlaceCombobox
+                          value={field.value ?? null}
+                          onChange={(v) => field.onChange(v ?? undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setOpen(false)}
+                    disabled={isPending}
+                  >
+                    إلغاء
+                  </Button>
+                  <Button type="submit" disabled={isPending}>
+                    {isPending ? 'جارٍ الحفظ…' : 'حفظ الترقية'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                راجع الأبناء المرتبطين
+              </DialogTitle>
+              <DialogDescription>
+                هؤلاء الأبناء مرتبطون بهذه الأم. أبقِهم إن كانوا أبناءها
+                فعلاً، أو افصل الرابطة عمّن لا ينتمي إليها.
+              </DialogDescription>
+            </DialogHeader>
+
+            {childrenResolved.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                تمّت مراجعة جميع الأبناء.
+              </p>
+            ) : (
+              <ul className="divide-y rounded-xl border">
+                {childrenResolved.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex items-center justify-between gap-3 p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {c.person?.display_name_ar ??
+                          c.person?.display_name_en ??
+                          '—'}
+                      </div>
+                      {c.person?.display_name_en &&
+                      c.person?.display_name_ar ? (
+                        <div
+                          className="truncate text-xs text-muted-foreground"
+                          dir="ltr"
+                        >
+                          {c.person?.display_name_en}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => handleUnlink(c.id, c.familyId)}
+                    >
+                      فكّ الرابطة
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <DialogFooter>
+              <Button onClick={handleDone} disabled={isPending}>
+                انتهيت
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Keep deletePersonAction import side-effect-free (may be used later).
+void deletePersonAction;

@@ -39,11 +39,20 @@ export const getCachedLoggedInUserClaims = cache(async () => {
   return data.claims;
 });
 
+// Returns null instead of throwing when the visitor is unauthenticated, so
+// callers (like AuthGuard) can branch on it and redirect to /login.
+export const getCachedLoggedInUserClaimsOrNull = cache(async () => {
+  const supabase = await createSupabaseClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims) {
+    return null;
+  }
+  return data.claims;
+});
 
 export const getCachedIsUserLoggedIn = cache(async () => {
-  const claims = await getCachedLoggedInUserClaims();
-  console.log('claims', claims);
-  return claims.sub !== null;
+  const claims = await getCachedLoggedInUserClaimsOrNull();
+  return Boolean(claims?.sub);
 });
 
 export const getCachedLoggedInUserId = cache(async () => {

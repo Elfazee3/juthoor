@@ -1,13 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import type { EmailOtpType } from '@supabase/supabase-js';
 
+// Handles email link confirmations (magic link, signup, invite, recovery,
+// email-change). Supabase sends `type` and `token_hash` in the URL; we hand
+// both to verifyOtp so any flavour of email confirmation works.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token_hash = searchParams.get('token_hash');
-  const next = searchParams.get('next') ?? '/dashboard';
+  const type = searchParams.get('type') as EmailOtpType | null;
+  const rawNext = searchParams.get('next') ?? '/dashboard';
+  // Only allow same-origin paths to avoid open-redirect via the `next` param.
+  const next = rawNext.startsWith('/') ? rawNext : '/dashboard';
 
-  if (token_hash) {
+  if (token_hash && type) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -26,16 +33,12 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.verifyOtp({
-      type: 'magiclink',
-      token_hash,
-    });
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
 
     if (!error) {
-      return NextResponse.redirect(new URL(`/${next.slice(1)}`, req.url));
+      return NextResponse.redirect(new URL(next, req.url));
     }
   }
 
-  // return the user to an error page with some instructions
   return NextResponse.redirect(new URL('/auth/auth-code-error', req.url));
 }
