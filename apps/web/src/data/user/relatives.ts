@@ -53,6 +53,7 @@ export const addRelativeAction = authActionClient
       kind,
       motherId: motherId ?? null,
       newPlaceholderMother: newPlaceholderMother ?? false,
+      newPersonGender: personInput.gender,
     });
 
     const personId = await createPersonWithPrimaryName(supabase, personInput);
@@ -138,6 +139,8 @@ interface PlanArgs {
   readonly kind: 'child' | 'parent' | 'spouse' | 'sibling';
   readonly motherId: string | null;
   readonly newPlaceholderMother: boolean;
+  /** Gender of the person being created — used to block same-gender co-parents. */
+  readonly newPersonGender: 'M' | 'F';
 }
 
 async function planLink(
@@ -159,7 +162,7 @@ async function planLink(
 /** The new person becomes a parent of the anchor. */
 async function planParentLink(
   supabase: SupabaseServerClient,
-  { anchor }: PlanArgs
+  { anchor, newPersonGender }: PlanArgs
 ): Promise<LinkPlan> {
   const families = await loadParentFamilies(supabase, anchor.id);
 
@@ -175,6 +178,23 @@ async function planParentLink(
       `كلا والدَي ${anchor.displayName} مسجّلان بالفعل. عدّل العائلة الحالية بدلًا من إضافة والد جديد.`
     );
   }
+
+  // The empty slot's sibling holds the already-recorded parent. In the M/F
+  // model a child has at most one father and one mother, so a second parent
+  // must be the OPPOSITE gender. Without this guard, adding the same parent
+  // twice produced "نسيمت married to نسيمت" (two same-gender co-parents).
+  const existingParentId =
+    withEmptySlot.partner1_id ?? withEmptySlot.partner2_id;
+  if (existingParentId) {
+    const existingGender = await loadPersonGender(supabase, existingParentId);
+    if (existingGender === newPersonGender) {
+      const role = newPersonGender === 'F' ? 'أمٌّ' : 'أبٌ';
+      throw new Error(
+        `لدى ${anchor.displayName} ${role} مسجّل بالفعل. لا يمكن إضافة والد آخر بالجنس نفسه — عدّل العائلة الحالية بدلًا من ذلك.`
+      );
+    }
+  }
+
   return {
     kind: 'parent',
     familyId: withEmptySlot.id,
@@ -390,6 +410,19 @@ async function loadPartnerIds(
   return (data ?? [])
     .map((f) => (f.partner1_id === personId ? f.partner2_id : f.partner1_id))
     .filter((id): id is string => Boolean(id));
+}
+
+async function loadPersonGender(
+  supabase: SupabaseServerClient,
+  personId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('persons')
+    .select('gender')
+    .eq('id', personId)
+    .maybeSingle();
+  if (error) throw new Error(toUserFacingDbError(error.message));
+  return data?.gender ?? null;
 }
 
 async function assertPersonInTree(

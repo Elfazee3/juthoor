@@ -19,19 +19,6 @@ type FilterKey = (typeof TYPE_FILTERS)[number]['key'];
 
 const PAGE_SIZE = 60;
 
-const TYPE_LABEL_AR: Record<string, string> = {
-  village: 'قرية',
-  city: 'مدينة',
-  clan_locality: 'عشيرة',
-  khirba: 'خربة',
-};
-const TYPE_LABEL_EN: Record<string, string> = {
-  village: 'Village',
-  city: 'City',
-  clan_locality: 'Clan locality',
-  khirba: 'Ruins',
-};
-
 function looksArabic(s: string | null): boolean {
   if (!s) return false;
   return /[؀-ۿ]/.test(s);

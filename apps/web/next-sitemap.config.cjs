@@ -1,5 +1,5 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: 'https://my-awesome-saas.com', // FIXME: Change to your production URL
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://juthoor.app',
   generateRobotsTxt: true,
 };

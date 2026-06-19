@@ -57,7 +57,7 @@ function fallbackTransliterate(input: string): string | null {
       matched = true;
     }
   }
-  return matched ? out.replace(/[a-z\-]/gi, ' ').replace(/\s+/g, ' ').trim() : null;
+  return matched ? out.replace(/[a-z-]/gi, ' ').replace(/\s+/g, ' ').trim() : null;
 }
 
 /**

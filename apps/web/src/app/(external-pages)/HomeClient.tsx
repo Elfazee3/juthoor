@@ -11,7 +11,6 @@ import {
   MapPin,
   Quote,
   ScrollText,
-  Sparkles,
 } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import { StatCounter } from '@/components/StatCounter';
