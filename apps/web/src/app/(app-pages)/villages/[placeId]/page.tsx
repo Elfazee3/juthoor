@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import {
   loadPlaceById,
+  loadPlaceProfile,
   loadPersonsFromPlace,
   loadSurnamesFromPlace,
 } from '@/data/user/places';
@@ -10,11 +11,19 @@ import { VillageDetailClient } from './VillageDetailClient';
 async function VillageDetailContainer({ placeId }: { placeId: string }) {
   const place = await loadPlaceById(placeId);
   if (!place) notFound();
-  const [persons, surnames] = await Promise.all([
+  const [persons, surnames, profile] = await Promise.all([
     loadPersonsFromPlace(placeId).catch(() => []),
     loadSurnamesFromPlace(placeId).catch(() => []),
+    loadPlaceProfile(placeId).catch(() => null),
   ]);
-  return <VillageDetailClient place={place} persons={persons} surnames={surnames} />;
+  return (
+    <VillageDetailClient
+      place={place}
+      persons={persons}
+      surnames={surnames}
+      profile={profile}
+    />
+  );
 }
 
 export default async function VillageDetailPage({

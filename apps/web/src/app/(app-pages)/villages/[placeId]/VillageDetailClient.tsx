@@ -5,8 +5,12 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Calendar,
   ChevronRight,
+  ExternalLink,
+  FileText,
+  Landmark,
   MapPin,
   Plus,
   Tent,
@@ -17,6 +21,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import type {
   PlaceDetail,
   PlacePerson,
+  PlaceProfile,
   SurnameGroupItem,
 } from '@/data/user/places';
 
@@ -39,14 +44,26 @@ export function VillageDetailClient({
   place,
   persons,
   surnames,
+  profile,
 }: {
   place: PlaceDetail;
   persons: PlacePerson[];
   surnames: SurnameGroupItem[];
+  profile?: PlaceProfile | null;
 }) {
   const { t, locale, dir } = useLocale();
   const Arrow = locale === 'ar' ? ArrowLeft : ArrowRight;
   const Back = locale === 'ar' ? ChevronRight : ArrowLeft;
+
+  const pick = (ar: string | null | undefined, en: string | null | undefined) =>
+    (locale === 'ar' ? ar || en : en || ar) || null;
+
+  const historyText = pick(profile?.historical_overview_ar, profile?.historical_overview_en);
+  const remainsText = pick(profile?.what_remains_ar, profile?.what_remains_en);
+  const sourceText = pick(profile?.source_attribution_ar, profile?.source_attribution_en);
+  const externalLinks = profile?.external_links ?? [];
+  const isDepopulated = Boolean(place.is_depopulated || place.depopulated_year);
+  const hasEditorial = Boolean(historyText || remainsText || profile?.population_count);
 
   const meta = TYPE_META[place.place_type ?? 'village'] ?? TYPE_META.village;
   const TypeIcon = meta.icon;
@@ -137,6 +154,42 @@ export function VillageDetailClient({
           <Stat color="gold" label={t('عائلات', 'Family names')} value={surnames.length} />
           <Stat color="terra" label={t('شجرات تربطه', 'Trees rooted here')} value={treesCount} />
         </div>
+
+        {/* Editorial enrichment — only when a place_profile exists */}
+        {hasEditorial && (
+          <section className="mb-12 space-y-4">
+            {profile?.population_count != null && (
+              <div className="inline-flex items-baseline gap-2 rounded-2xl border border-[var(--jt-gold-100)]/70 bg-[var(--jt-gold-50)]/60 px-5 py-3">
+                <span
+                  className="text-3xl font-bold text-[var(--jt-gold-700)]"
+                  style={{ fontFamily: 'var(--jt-font-display)' }}
+                >
+                  {profile.population_count.toLocaleString()}
+                </span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-stone-500)]">
+                  {profile.population_year
+                    ? t(`سكّان القرية (${profile.population_year})`, `Population (${profile.population_year})`)
+                    : t('سكّان القرية', 'Population')}
+                </span>
+              </div>
+            )}
+            {historyText && (
+              <InfoCard
+                icon={BookOpen}
+                title={t('نظرة تاريخية', 'Historical overview')}
+                body={historyText}
+                source={sourceText}
+              />
+            )}
+            {remainsText && (
+              <InfoCard
+                icon={Landmark}
+                title={t('ما تبقى اليوم', 'What remains today')}
+                body={remainsText}
+              />
+            )}
+          </section>
+        )}
 
         {/* Families from here */}
         <section className="mb-12">
@@ -262,6 +315,50 @@ export function VillageDetailClient({
           )}
         </section>
 
+        {/* External archives + content-sourcing note (for depopulated places) */}
+        {(isDepopulated || externalLinks.length > 0) && (
+          <section className="mb-12">
+            {externalLinks.length > 0 && (
+              <>
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--jt-olive-700)]">
+                  {t('مصادر خارجية', 'External resources')}
+                </p>
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {externalLinks.map((link) => {
+                    const label = pick(link.label_ar, link.label_en) ?? link.url;
+                    return (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group inline-flex items-center gap-2 rounded-full border border-[var(--jt-stone-200)] bg-[var(--card)] px-4 py-2 text-sm text-[var(--jt-stone-800)] transition-all hover:-translate-y-0.5 hover:border-[var(--jt-olive-400)] hover:shadow-[var(--jt-shadow-sm)]"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-[var(--jt-olive-600)]" />
+                        <span className="font-medium">{label}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            <div className="rounded-2xl border-s-4 border-[var(--jt-terra-500)] bg-[var(--jt-terra-50)]/40 p-4">
+              <p className="mb-1 text-xs font-bold text-[var(--jt-terra-600)]">
+                {t('عن مصادر هذه الصفحة', "About this page's sources")}
+              </p>
+              <p
+                className="text-[13px] text-[var(--jt-stone-800)]"
+                style={{ lineHeight: locale === 'ar' ? 1.9 : 1.6 }}
+              >
+                {t(
+                  'النص التاريخي في هذه الصفحة مكتوب بشكل مستقل من مصادر متاحة للعامة، ولا ينسخ محتوى الأرشيفات المحمية بحقوق نشر (مثل iReturn التابع لمنظمة Zochrot). نوفّر بدلًا من ذلك روابط خارجية للبحث الأعمق.',
+                  "This page's historical text is written independently from public-domain sources, and does not reproduce copyrighted archive write-ups (such as Zochrot's iReturn). We link out to them for deeper research instead.",
+                )}
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* CTA */}
         <section className="rounded-3xl border border-[var(--jt-olive-200)]/60 bg-[var(--jt-olive-50)]/40 p-6 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -328,6 +425,43 @@ function Stat({
       <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-stone-500)]">
         {label}
       </p>
+    </div>
+  );
+}
+
+function InfoCard({
+  icon: Icon,
+  title,
+  body,
+  source,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+  source?: string | null;
+}) {
+  const { locale } = useLocale();
+  return (
+    <div className="rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-5 shadow-[var(--jt-shadow-sm)] md:p-6">
+      <h3
+        className="mb-2 flex items-center gap-2 text-base font-bold text-[var(--jt-olive-900)]"
+        style={{ fontFamily: 'var(--jt-font-display)' }}
+      >
+        <Icon className="h-4 w-4 text-[var(--jt-olive-600)]" />
+        {title}
+      </h3>
+      <p
+        className="text-[15px] text-[var(--jt-stone-800)]"
+        style={{ lineHeight: locale === 'ar' ? 1.95 : 1.7 }}
+      >
+        {body}
+      </p>
+      {source && (
+        <p className="mt-3 flex items-start gap-1.5 border-t border-[var(--jt-stone-200)]/60 pt-3 text-[11px] text-[var(--jt-stone-500)]">
+          <FileText className="mt-0.5 h-3 w-3 flex-none" />
+          <span>{source}</span>
+        </p>
+      )}
     </div>
   );
 }

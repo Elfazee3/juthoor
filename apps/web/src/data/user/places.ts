@@ -1,6 +1,7 @@
 'use server';
 
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import type { PlaceExternalLink } from '@/types/database';
 
 export type PlaceType = 'village' | 'city' | 'clan_locality' | 'khirba';
 
@@ -69,6 +70,38 @@ export async function loadPlaceById(id: string): Promise<PlaceDetail | null> {
     .maybeSingle();
   if (error) throw new Error(`Failed to load place: ${error.message}`);
   return (data as PlaceDetail | null) ?? null;
+}
+
+export type PlaceProfile = {
+  place_id: string;
+  historical_overview_ar: string | null;
+  historical_overview_en: string | null;
+  what_remains_ar: string | null;
+  what_remains_en: string | null;
+  population_year: number | null;
+  population_count: number | null;
+  source_attribution_ar: string | null;
+  source_attribution_en: string | null;
+  external_links: PlaceExternalLink[] | null;
+};
+
+/** Editorial enrichment for a place (history, what-remains, sources, links).
+ *  Degrades gracefully: returns null if the row is absent OR if the
+ *  `place_profiles` table has not been migrated yet, so the village page renders
+ *  unchanged until the migration is applied. */
+export async function loadPlaceProfile(
+  placeId: string,
+): Promise<PlaceProfile | null> {
+  const supabase = await createJuthoorSupabaseClient();
+  const { data, error } = await supabase
+    .from('place_profiles')
+    .select(
+      'place_id, historical_overview_ar, historical_overview_en, what_remains_ar, what_remains_en, population_year, population_count, source_attribution_ar, source_attribution_en, external_links',
+    )
+    .eq('place_id', placeId)
+    .maybeSingle();
+  if (error) return null; // table missing / not yet migrated — degrade silently
+  return (data as PlaceProfile | null) ?? null;
 }
 
 export type PlacePerson = {

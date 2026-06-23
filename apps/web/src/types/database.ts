@@ -217,6 +217,30 @@ type MutablePlace = {
   updated_at: string;
 };
 
+/** Editorial enrichment for a place (Villages/Cities/Clans page). 1:1 with `places`.
+ *  Kept in a separate table so the core `places` queries (and the dashboard that
+ *  reads them) are never affected by enrichment changes. */
+export type PlaceExternalLink = {
+  label_ar: string | null;
+  label_en: string | null;
+  url: string;
+};
+
+type MutablePlaceProfile = {
+  place_id: string;
+  historical_overview_ar: string | null;
+  historical_overview_en: string | null;
+  what_remains_ar: string | null;
+  what_remains_en: string | null;
+  population_year: number | null;
+  population_count: number | null;
+  source_attribution_ar: string | null;
+  source_attribution_en: string | null;
+  external_links: PlaceExternalLink[] | null;
+  updated_at: string;
+  updated_by: string | null;
+};
+
 type MutableTree = {
   id: string;
   name: string;
@@ -370,6 +394,12 @@ export type Database = {
         Row: MutablePlace;
         Insert: Partial<MutablePlace> & { id?: string; name_ar: string };
         Update: Partial<MutablePlace>;
+        Relationships: [];
+      };
+      place_profiles: {
+        Row: MutablePlaceProfile;
+        Insert: Partial<MutablePlaceProfile> & { place_id: string };
+        Update: Partial<MutablePlaceProfile>;
         Relationships: [];
       };
       trees: {
