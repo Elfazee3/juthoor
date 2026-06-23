@@ -1,0 +1,215 @@
+'use client';
+
+import { useState } from 'react';
+import { Award, Check, HeartHandshake, Pencil, X } from 'lucide-react';
+import { useLocale } from '@/contexts/LocaleContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  savePersonProfile,
+  type PersonProfile,
+} from '@/data/user/personProfiles';
+
+/**
+ * "Achievements" + "Contribution to the cause" for the 360° person view
+ * (design flow 4.X.1.1.4 / 4.X.1.1.5). Read for everyone who can see the person;
+ * inline-editable by tree owners/collaborators (`canManage`). Bilingual: shows
+ * and edits the active locale's text, preserving the other language on save.
+ */
+export function PersonStoryPanel({
+  personId,
+  initialProfile,
+  canManage,
+}: {
+  personId: string;
+  initialProfile: PersonProfile | null;
+  canManage: boolean;
+}) {
+  const { t, locale } = useLocale();
+  const isAR = locale === 'ar';
+
+  const [profile, setProfile] = useState<PersonProfile | null>(initialProfile);
+  const [editing, setEditing] = useState(false);
+  const [achDraft, setAchDraft] = useState('');
+  const [conDraft, setConDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const achievements = isAR
+    ? profile?.achievements_ar ?? profile?.achievements_en
+    : profile?.achievements_en ?? profile?.achievements_ar;
+  const contribution = isAR
+    ? profile?.contribution_ar ?? profile?.contribution_en
+    : profile?.contribution_en ?? profile?.contribution_ar;
+
+  const hasContent = Boolean(achievements || contribution);
+
+  // Nothing recorded and the viewer can't add anything → render nothing.
+  if (!hasContent && !canManage) return null;
+
+  function startEditing() {
+    setAchDraft((isAR ? profile?.achievements_ar : profile?.achievements_en) ?? '');
+    setConDraft((isAR ? profile?.contribution_ar : profile?.contribution_en) ?? '');
+    setError(null);
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await savePersonProfile({
+        personId,
+        // edit the active locale; preserve the other language untouched
+        achievementsAr: isAR ? achDraft : profile?.achievements_ar ?? null,
+        achievementsEn: isAR ? profile?.achievements_en ?? null : achDraft,
+        contributionAr: isAR ? conDraft : profile?.contribution_ar ?? null,
+        contributionEn: isAR ? profile?.contribution_en ?? null : conDraft,
+      });
+      setProfile(updated);
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('تعذّر الحفظ', 'Could not save'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+        <h3
+          className="text-lg font-bold text-[var(--jt-olive-900)]"
+          style={{ fontFamily: 'var(--jt-font-display)' }}
+        >
+          {t('السيرة والإسهام', 'Story & contribution')}
+        </h3>
+        {canManage && !editing && (
+          <Button variant="outline" size="sm" onClick={startEditing}>
+            <Pencil className="h-3.5 w-3.5" />
+            {hasContent ? t('تعديل', 'Edit') : t('إضافة', 'Add')}
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        {editing ? (
+          <div className="space-y-4">
+            <Field
+              icon={Award}
+              label={t('الإنجازات', 'Achievements')}
+              value={achDraft}
+              onChange={setAchDraft}
+              placeholder={t(
+                'مناصب، شهادات، أعمال بارزة…',
+                'Roles, honours, notable work…',
+              )}
+            />
+            <Field
+              icon={HeartHandshake}
+              label={t('المساهمة في القضية', 'Contribution to the cause')}
+              value={conDraft}
+              onChange={setConDraft}
+              placeholder={t(
+                'دور هذا الشخص في خدمة فلسطين وأهلها…',
+                "This person's role in serving Palestine and its people…",
+              )}
+            />
+            {error && (
+              <p className="text-sm text-[var(--jt-terra-600)]">{error}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                <Check className="h-4 w-4" />
+                {saving ? t('يحفظ…', 'Saving…') : t('حفظ', 'Save')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+              >
+                <X className="h-4 w-4" />
+                {t('إلغاء', 'Cancel')}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <ReadBlock
+              icon={Award}
+              label={t('الإنجازات', 'Achievements')}
+              text={achievements}
+              empty={t('لم تُسجَّل إنجازات بعد.', 'No achievements recorded yet.')}
+            />
+            <ReadBlock
+              icon={HeartHandshake}
+              label={t('المساهمة في القضية', 'Contribution to the cause')}
+              text={contribution}
+              empty={t('لم تُسجَّل مساهمة بعد.', 'No contribution recorded yet.')}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReadBlock({
+  icon: Icon,
+  label,
+  text,
+  empty,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  text: string | null | undefined;
+  empty: string;
+}) {
+  return (
+    <div>
+      <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--jt-olive-700)]">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </p>
+      {text ? (
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-[var(--jt-stone-800)]">
+          {text}
+        </p>
+      ) : (
+        <p className="text-sm text-[var(--jt-stone-400)]">{empty}</p>
+      )}
+    </div>
+  );
+}
+
+function Field({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--jt-olive-700)]">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        maxLength={2000}
+        className="w-full resize-y rounded-xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-3 text-sm text-[var(--jt-stone-900)] outline-none focus:border-[var(--jt-olive-400)]"
+      />
+    </label>
+  );
+}

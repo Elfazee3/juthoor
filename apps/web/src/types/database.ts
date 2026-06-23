@@ -241,6 +241,18 @@ type MutablePlaceProfile = {
   updated_by: string | null;
 };
 
+/** Per-person narrative (achievements, contribution to the cause) for the 360
+ *  view. 1:1 with `persons`, kept separate so core persons queries are unaffected. */
+type MutablePersonProfile = {
+  person_id: string;
+  achievements_ar: string | null;
+  achievements_en: string | null;
+  contribution_ar: string | null;
+  contribution_en: string | null;
+  updated_at: string;
+  updated_by: string | null;
+};
+
 type MutableTree = {
   id: string;
   name: string;
@@ -400,6 +412,12 @@ export type Database = {
         Row: MutablePlaceProfile;
         Insert: Partial<MutablePlaceProfile> & { place_id: string };
         Update: Partial<MutablePlaceProfile>;
+        Relationships: [];
+      };
+      person_profiles: {
+        Row: MutablePersonProfile;
+        Insert: Partial<MutablePersonProfile> & { person_id: string };
+        Update: Partial<MutablePersonProfile>;
         Relationships: [];
       };
       trees: {

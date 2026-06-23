@@ -9,9 +9,11 @@ import { TreeView360 } from '@/components/tree/TreeView360';
 import { UpgradePlaceholderDialog } from '@/components/tree/UpgradePlaceholderDialog';
 import { EvidencePanel } from '@/components/person/EvidencePanel';
 import { PersonAvatar } from '@/components/person/PersonAvatar';
+import { PersonStoryPanel } from '@/components/person/PersonStoryPanel';
 import { getPerson, getTreePersons } from '@/data/anon/persons';
 import { getTreeSnapshot } from '@/data/anon/treeSnapshot';
 import { getPrimaryPhotoUrl } from '@/data/user/attachments';
+import { loadPersonProfile } from '@/data/user/personProfiles';
 import { buildNeighbors } from '@/lib/tree/relationships';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
 
@@ -56,12 +58,14 @@ export default async function PersonPage({ params }: Props) {
   const person = await getPerson(personId);
   if (!person) notFound();
 
-  const [snapshot, allPersons, primaryPhotoUrl, canManage] = await Promise.all([
-    getTreeSnapshot(treeId),
-    getTreePersons(treeId),
-    getPrimaryPhotoUrl(personId),
-    viewerCanManage(treeId),
-  ]);
+  const [snapshot, allPersons, primaryPhotoUrl, canManage, personProfile] =
+    await Promise.all([
+      getTreeSnapshot(treeId),
+      getTreePersons(treeId),
+      getPrimaryPhotoUrl(personId),
+      viewerCanManage(treeId),
+      loadPersonProfile(personId).catch(() => null),
+    ]);
   const neighbors = buildNeighbors(snapshot, personId);
 
   // primaryPhotoId is on persons row (added by attachments migration)
@@ -112,6 +116,12 @@ export default async function PersonPage({ params }: Props) {
           />
         </div>
       </div>
+
+      <PersonStoryPanel
+        personId={personId}
+        initialProfile={personProfile}
+        canManage={canManage}
+      />
 
       {person.gender === 'M' ? (
         <Card>
