@@ -222,7 +222,7 @@ function StatusCard({
       ? 'border-[var(--jt-olive-200)]/70 bg-[var(--jt-olive-50)]/60 text-[var(--jt-olive-800)]'
       : tone === 'terra'
         ? 'border-[var(--jt-terra-200)]/70 bg-[var(--jt-terra-50)]/50 text-[var(--jt-terra-700)]'
-        : 'border-[var(--jt-sand)]/40 bg-[var(--jt-sand-light,#F7F0E6)]/60 text-[var(--jt-stone-800)]';
+        : 'border-[var(--jt-gold-300)]/50 bg-[var(--jt-gold-100)]/50 text-[var(--jt-stone-800)]';
   return (
     <section className={`rounded-3xl border p-6 ${styles}`}>
       <div className="flex items-start gap-3">

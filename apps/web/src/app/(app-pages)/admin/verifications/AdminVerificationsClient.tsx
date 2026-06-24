@@ -132,7 +132,7 @@ export function AdminVerificationsClient({
                     href={v.family_evidence_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full border border-[var(--jt-sand)]/40 bg-[var(--jt-sand-light,#F7F0E6)]/60 px-3 py-1.5 text-xs font-semibold text-[var(--jt-stone-700)] transition-colors hover:opacity-80"
+                    className="inline-flex items-center gap-1 rounded-full border border-[var(--jt-gold-300)]/50 bg-[var(--jt-gold-100)]/50 px-3 py-1.5 text-xs font-semibold text-[var(--jt-stone-700)] transition-colors hover:opacity-80"
                   >
                     <FileText className="h-3 w-3" />
                     {t('دليل العائلة', 'Family evidence')}
