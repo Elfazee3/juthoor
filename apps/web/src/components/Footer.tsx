@@ -50,6 +50,7 @@ const Footer = () => {
             { label: t('شجرة العائلة', 'Family Tree'), href: '/tree' },
             { label: t('البحث عن ذويك', 'Family Finder'), href: '/sign-up' },
             { label: t('الشجرة الأم', 'Mother Tree'), href: '/sign-up' },
+            { label: t('توثيق الهوية', 'Verify identity'), href: '/verify' },
           ]}
         />
 

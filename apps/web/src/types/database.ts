@@ -253,6 +253,23 @@ type MutablePersonProfile = {
   updated_by: string | null;
 };
 
+/** Gov-ID + family-evidence verification request (mockup 02 / flow 1.1). */
+type MutableIdentityVerification = {
+  id: string;
+  user_id: string;
+  tree_id: string | null;
+  id_document_path: string;
+  id_document_type: 'passport' | 'national_id' | 'refugee_card' | 'other';
+  family_evidence_path: string | null;
+  family_evidence_note: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewer_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type MutableTree = {
   id: string;
   name: string;
@@ -418,6 +435,16 @@ export type Database = {
         Row: MutablePersonProfile;
         Insert: Partial<MutablePersonProfile> & { person_id: string };
         Update: Partial<MutablePersonProfile>;
+        Relationships: [];
+      };
+      identity_verifications: {
+        Row: MutableIdentityVerification;
+        Insert: Partial<MutableIdentityVerification> & {
+          user_id: string;
+          id_document_path: string;
+          id_document_type: MutableIdentityVerification['id_document_type'];
+        };
+        Update: Partial<MutableIdentityVerification>;
         Relationships: [];
       };
       trees: {
