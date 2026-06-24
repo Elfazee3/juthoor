@@ -4,7 +4,10 @@ import { revalidatePath } from 'next/cache';
 
 import { authActionClient } from '@/lib/safe-action';
 import { addRelativeInputSchema } from '@/lib/tree/zodSchemas';
+import { getTreeSnapshot } from '@/data/anon/treeSnapshot';
+import { validateMarriage, validateNewSpouse } from '@/lib/tree/marriageRules';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import type { GenderType } from '@/types/database';
 
 import {
   createPersonWithPrimaryName,
@@ -149,7 +152,7 @@ async function planLink(
 ): Promise<LinkPlan> {
   switch (args.kind) {
     case 'spouse':
-      return { kind: 'spouse' };
+      return planSpouseLink(args);
     case 'parent':
       return planParentLink(supabase, args);
     case 'child':
@@ -157,6 +160,27 @@ async function planLink(
     case 'sibling':
       return planSiblingLink(supabase, args);
   }
+}
+
+/**
+ * The new person becomes a spouse of the anchor. Enforces T&C Article 6:
+ * opposite gender + the concurrent-spouse limits (a woman ≤ 1 husband, a man
+ * ≤ 4 wives). Blood mahram cannot apply here — the spouse is brand new.
+ */
+async function planSpouseLink({
+  treeId,
+  anchor,
+  newPersonGender,
+}: PlanArgs): Promise<LinkPlan> {
+  const snapshot = await getTreeSnapshot(treeId);
+  const violation = validateNewSpouse({
+    snapshot,
+    anchorId: anchor.id,
+    anchorGender: anchor.gender as GenderType,
+    newGender: newPersonGender,
+  });
+  if (violation) throw new Error(violation.messageAr);
+  return { kind: 'spouse' };
 }
 
 /** The new person becomes a parent of the anchor. */
@@ -242,6 +266,18 @@ async function planChildLink(
       );
     }
     await assertPersonInTree(supabase, motherId, treeId);
+    // T&C Art 6: choosing an existing mother for a child records a father×mother
+    // union — validate it (blood mahram + concurrent-spouse limits) before linking.
+    const snapshot = await getTreeSnapshot(treeId);
+    const mother = snapshot.persons.find((p) => p.id === motherId);
+    const violation = validateMarriage({
+      snapshot,
+      aId: anchor.id,
+      aGender: anchor.gender as GenderType,
+      bId: motherId,
+      bGender: mother?.gender ?? 'F',
+    });
+    if (violation) throw new Error(violation.messageAr);
     return {
       kind: 'child',
       fatherId: anchor.id,
