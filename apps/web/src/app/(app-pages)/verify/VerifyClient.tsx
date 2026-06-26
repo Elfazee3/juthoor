@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import {
+  Check,
   CheckCircle2,
   Clock,
   FileText,
   Loader2,
-  ShieldCheck,
   Upload,
   XCircle,
 } from 'lucide-react';
@@ -56,6 +56,8 @@ export function VerifyClient({
   const [error, setError] = useState<string | null>(null);
 
   const status = verification?.status;
+  // Step 4 = submitted/done; otherwise sitting on the Identity step (2).
+  const activeStep = status === 'approved' || status === 'pending' ? 4 : 2;
 
   async function handleSubmit() {
     if (!idFile) {
@@ -82,22 +84,8 @@ export function VerifyClient({
   }
 
   return (
-    <div dir={dir} className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 md:p-8">
-      <header className="text-center">
-        <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)]/70 bg-[var(--jt-olive-50)]/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          {t('توثيق الهوية', 'Identity verification')}
-        </span>
-        <h1 className="text-3xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-          {t('وثّق هويتك وانتماءك للعائلة', 'Verify your identity & family belonging')}
-        </h1>
-        <p className="mx-auto mt-2 max-w-lg text-sm text-[var(--jt-stone-600)]" style={{ lineHeight: 1.8 }}>
-          {t(
-            'للحصول على صلاحية تحرير شجرة عائلتك، أرفق وثيقة هوية رسمية ودليلًا على انتمائك للعائلة. يراجعها المسؤول خلال ٢-٣ أيام.',
-            'To get edit access to your family tree, attach a government ID and evidence of your belonging to the family. An administrator reviews it within 2–3 days.',
-          )}
-        </p>
-      </header>
+    <div dir={dir} className="mx-auto flex w-full max-w-xl flex-1 flex-col p-4 md:p-8">
+      <Stepper active={activeStep} />
 
       {status === 'approved' ? (
         <StatusCard
@@ -121,7 +109,7 @@ export function VerifyClient({
           )}
         />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           {status === 'rejected' && (
             <StatusCard
               tone="terra"
@@ -132,9 +120,16 @@ export function VerifyClient({
             />
           )}
 
-          <section className="rounded-3xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-6 shadow-[var(--jt-shadow-sm)]">
+          <section className="rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-6 shadow-[var(--jt-shadow-sm)] md:p-7">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--jt-stone-500)]">
+              {t('الخطوة 2 من 3 · مخطط العملية 1.1', 'Step 2 of 3 · process flow 1.1')}
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+              {t('تحقّق من هويتك', 'Verify your identity')}
+            </h2>
+
             {/* ID type */}
-            <label className="mb-4 flex flex-col gap-1.5">
+            <label className="mb-4 mt-5 flex flex-col gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-stone-500)]">
                 {t('نوع الوثيقة', 'Document type')}
               </span>
@@ -151,35 +146,45 @@ export function VerifyClient({
               </select>
             </label>
 
-            {/* Gov ID (required) */}
-            <FilePicker
-              label={t('وثيقة الهوية الرسمية', 'Government ID')}
-              hint={t('جواز سفر، بطاقة هوية، أو بطاقة لاجئ', 'Passport, national ID, or refugee card')}
+            {/* Gov ID (required) — Identity step */}
+            <UploadZone
+              title={t('حمّل وثيقة هوية رسمية', 'Upload a government-issued ID')}
+              hint={t('جواز سفر، بطاقة هوية وطنية، أو بطاقة تسجيل لاجئ', 'Passport, national ID, or refugee registration card')}
               file={idFile}
               onPick={setIdFile}
             />
 
-            {/* Family evidence (optional) */}
-            <div className="mt-4">
-              <FilePicker
-                label={t('دليل الانتماء للعائلة (اختياري)', 'Family-belonging evidence (optional)')}
-                hint={t('سجل عائلي، أو وثيقة تذكر والديك أو جدودك', 'A family record or a document naming your parents/grandparents')}
+            {/* Family belonging — Family step */}
+            <div className="mt-5 rounded-xl border-s-4 border-[var(--jt-gold-400)] bg-[var(--jt-gold-50)] p-3">
+              <p className="text-[12px] text-[var(--jt-stone-700)]" style={{ lineHeight: 1.6 }}>
+                {t(
+                  'الخطوة التالية (العائلة): قدّم دليلاً يربطك بالعائلة التي تريد إدارة شجرتها — سجل عائلي، شهادة أحد كبار العائلة، أو وثيقة تذكر والديك أو جدودك.',
+                  'Next (Family): provide evidence connecting you to the family whose tree you want to manage — a family record, an elder’s testimony, or a document naming your parents or grandparents.',
+                )}
+              </p>
+            </div>
+            <div className="mt-3">
+              <UploadZone
+                compact
+                title={t('دليل الانتماء للعائلة (اختياري)', 'Family-belonging evidence (optional)')}
+                hint={t('سجل عائلي أو وثيقة تذكر والديك', 'A family record or a document naming your parents')}
                 file={famFile}
                 onPick={setFamFile}
               />
-              <label className="mt-3 flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-stone-500)]">
-                  {t('أو اكتب شهادة (مثل شهادة أحد كبار العائلة)', 'Or write a testimony (e.g. an elder’s testimony)')}
-                </span>
-                <textarea
-                  value={famNote}
-                  onChange={(e) => setFamNote(e.target.value)}
-                  rows={3}
-                  maxLength={2000}
-                  placeholder={t('صلتي بهذه العائلة هي…', 'My connection to this family is…')}
-                  className="w-full resize-y rounded-xl border border-[var(--jt-stone-200)] bg-[var(--background)] p-3 text-sm outline-none focus:border-[var(--jt-olive-400)]"
-                />
-              </label>
+              <textarea
+                value={famNote}
+                onChange={(e) => setFamNote(e.target.value)}
+                rows={2}
+                maxLength={2000}
+                placeholder={t('أو اكتب شهادة قصيرة: صلتي بهذه العائلة هي…', 'Or write a short testimony: my connection to this family is…')}
+                className="mt-2 w-full resize-y rounded-xl border border-[var(--jt-stone-200)] bg-[var(--background)] p-3 text-sm outline-none focus:border-[var(--jt-olive-400)]"
+              />
+            </div>
+
+            {/* Review SLA pill */}
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--jt-gold-100)] px-3 py-1 text-[11px] font-medium text-[var(--jt-gold-700)]">
+              <Clock className="h-3.5 w-3.5" />
+              {t('تتم المراجعة من قبل المسؤول خلال 2-3 أيام', 'Reviewed by an administrator within 2–3 days')}
             </div>
 
             {error && (
@@ -198,6 +203,102 @@ export function VerifyClient({
               {t('إرسال للمراجعة', 'Submit for review')}
             </button>
           </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Account → Identity → Family progress stepper (mockup 02). */
+function Stepper({ active }: { active: number }) {
+  const { t } = useLocale();
+  const steps = [
+    { n: 1, label: t('الحساب', 'Account') },
+    { n: 2, label: t('الهوية', 'Identity') },
+    { n: 3, label: t('العائلة', 'Family') },
+  ];
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-center">
+        {steps.map((s, i) => {
+          const done = active > s.n || active === 4;
+          const isActive = active === s.n;
+          return (
+            <div key={s.n} className="flex items-center">
+              <div
+                className={
+                  'flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold ' +
+                  (done
+                    ? 'border-[var(--jt-olive-600)] bg-[var(--jt-olive-100)] text-[var(--jt-olive-700)]'
+                    : isActive
+                      ? 'border-[var(--jt-olive-600)] bg-[var(--jt-olive-600)] text-white'
+                      : 'border-[var(--jt-stone-300)] bg-[var(--card)] text-[var(--jt-stone-400)]')
+                }
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : s.n}
+              </div>
+              {i < steps.length - 1 && (
+                <span
+                  className={
+                    'mx-1.5 h-px w-9 ' +
+                    (active > s.n || active === 4 ? 'bg-[var(--jt-olive-500)]' : 'bg-[var(--jt-stone-200)]')
+                  }
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex items-center justify-center gap-[34px] text-[10px]">
+        {steps.map((s) => (
+          <span
+            key={s.n}
+            className={active >= s.n || active === 4 ? 'font-medium text-[var(--jt-olive-700)]' : 'text-[var(--jt-stone-400)]'}
+          >
+            {s.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UploadZone({
+  title,
+  hint,
+  file,
+  onPick,
+  compact,
+}: {
+  title: string;
+  hint: string;
+  file: File | null;
+  onPick: (f: File | null) => void;
+  compact?: boolean;
+}) {
+  return (
+    <div>
+      <label
+        className={
+          'flex cursor-pointer flex-col items-center justify-center rounded-xl border-[1.5px] border-dashed border-[var(--jt-stone-300)] text-center transition-colors hover:border-[var(--jt-olive-400)] ' +
+          (compact ? 'p-3' : 'p-5')
+        }
+      >
+        <Upload className={(compact ? 'h-5 w-5' : 'h-6 w-6') + ' text-[var(--jt-gold-600)]'} />
+        <span className="mt-1.5 text-[13px] font-semibold text-[var(--jt-stone-900)]">{title}</span>
+        <span className="mt-0.5 text-[11px] text-[var(--jt-stone-500)]">{hint}</span>
+        <input
+          type="file"
+          accept={ACCEPT}
+          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          className="hidden"
+        />
+      </label>
+      {file && (
+        <div className="mt-2 flex items-center gap-2 rounded-lg bg-[var(--jt-olive-100)] px-3 py-2">
+          <FileText className="h-4 w-4 text-[var(--jt-olive-700)]" />
+          <span className="min-w-0 flex-1 truncate text-[12px] text-[var(--jt-stone-800)]">{file.name}</span>
+          <Check className="h-4 w-4 text-[var(--jt-olive-600)]" />
         </div>
       )}
     </div>
@@ -224,7 +325,7 @@ function StatusCard({
         ? 'border-[var(--jt-terra-200)]/70 bg-[var(--jt-terra-50)]/50 text-[var(--jt-terra-700)]'
         : 'border-[var(--jt-gold-300)]/50 bg-[var(--jt-gold-100)]/50 text-[var(--jt-stone-800)]';
   return (
-    <section className={`rounded-3xl border p-6 ${styles}`}>
+    <section className={`rounded-2xl border p-6 ${styles}`}>
       <div className="flex items-start gap-3">
         <Icon className="mt-0.5 h-6 w-6 flex-shrink-0" />
         <div>
@@ -235,44 +336,10 @@ function StatusCard({
             {body}
           </p>
           {note && (
-            <p className="mt-2 rounded-lg bg-white/50 p-2 text-xs text-[var(--jt-stone-700)]">
-              {note}
-            </p>
+            <p className="mt-2 rounded-lg bg-white/50 p-2 text-xs text-[var(--jt-stone-700)]">{note}</p>
           )}
         </div>
       </div>
     </section>
-  );
-}
-
-function FilePicker({
-  label,
-  hint,
-  file,
-  onPick,
-}: {
-  label: string;
-  hint: string;
-  file: File | null;
-  onPick: (f: File | null) => void;
-}) {
-  return (
-    <div>
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-stone-500)]">
-        {label}
-      </span>
-      <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--jt-olive-300)] bg-[var(--jt-olive-50)]/30 p-4 text-sm text-[var(--jt-olive-800)] transition-colors hover:bg-[var(--jt-olive-50)]/60">
-        {file ? <FileText className="h-5 w-5 flex-shrink-0" /> : <Upload className="h-5 w-5 flex-shrink-0" />}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold">{file ? file.name : hint}</span>
-        </span>
-        <input
-          type="file"
-          accept={ACCEPT}
-          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          className="hidden"
-        />
-      </label>
-    </div>
   );
 }
