@@ -25,6 +25,8 @@ const AL_TIRA: PlaceDetail = {
   district_en: 'Haifa',
   depopulated_year: 1948,
   is_depopulated: true,
+  latitude: 32.4,
+  longitude: 34.9,
 };
 
 const AL_TIRA_PROFILE: PlaceProfile = {
@@ -59,8 +61,8 @@ describe('VillageDetailClient — editorial enrichment (mockup 04)', () => {
     expect(screen.queryByText(/الموقع الأصلي للقرية/)).not.toBeNull();
     // Source attribution
     expect(screen.queryByText(/مُجمَّع من مصادر متاحة للعامة/)).not.toBeNull();
-    // Historical population figure + label
-    expect(screen.queryByText(/سكّان القرية/)).not.toBeNull();
+    // Historical population figure + label (mockup stat grid)
+    expect(screen.queryByText(/السكان/)).not.toBeNull();
     expect(screen.queryByText(/5[,٬]?280/)).not.toBeNull();
     // Curated external resource link
     expect(screen.queryByText(/فلسطين في الذاكرة/)).not.toBeNull();
@@ -76,7 +78,8 @@ describe('VillageDetailClient — editorial enrichment (mockup 04)', () => {
     // …but none of the editorial body text appears.
     expect(screen.queryByText(/كانت الطيرة قرية فلسطينية/)).toBeNull();
     expect(screen.queryByText(/الموقع الأصلي للقرية/)).toBeNull();
-    expect(screen.queryByText(/سكّان القرية/)).toBeNull();
+    // The population figure is absent without a profile (stat shows a dash).
+    expect(screen.queryByText(/5[,٬]?280/)).toBeNull();
     // The sourcing note still shows for a depopulated place (intended): it
     // contextualises the external archives even before editorial text exists.
     expect(screen.queryByText(/لا ينسخ محتوى الأرشيفات/)).not.toBeNull();

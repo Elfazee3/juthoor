@@ -58,14 +58,15 @@ export async function loadPlaceTypeCounts(): Promise<PlaceTypeCounts> {
 }
 
 export type PlaceDetail = PlaceListItem & {
-  // Future: lat/lng, history, photo
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export async function loadPlaceById(id: string): Promise<PlaceDetail | null> {
   const supabase = await createJuthoorSupabaseClient();
   const { data, error } = await supabase
     .from('places')
-    .select('id, name_ar, name_en, place_type, district_ar, district_en, depopulated_year, is_depopulated')
+    .select('id, name_ar, name_en, place_type, district_ar, district_en, depopulated_year, is_depopulated, latitude, longitude')
     .eq('id', id)
     .maybeSingle();
   if (error) throw new Error(`Failed to load place: ${error.message}`);
