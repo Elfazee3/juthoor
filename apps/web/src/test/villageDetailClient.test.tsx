@@ -4,6 +4,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext';
 import { VillageDetailClient } from '@/app/(app-pages)/villages/[placeId]/VillageDetailClient';
 import type {
   PlaceDetail,
+  PlacePerson,
   PlaceProfile,
 } from '@/data/user/places';
 
@@ -83,6 +84,39 @@ describe('VillageDetailClient — editorial enrichment (mockup 04)', () => {
     // The sourcing note still shows for a depopulated place (intended): it
     // contextualises the external archives even before editorial text exists.
     expect(screen.queryByText(/لا ينسخ محتوى الأرشيفات/)).not.toBeNull();
+  });
+
+  it('withholds a protected (minor) record from the public people list (Privacy §11)', () => {
+    const people: PlacePerson[] = [
+      {
+        person_id: 'p-adult',
+        display_name_ar: 'محمد العجرمي',
+        display_name_en: 'Mohammed Al-Ajrami',
+        gender: 'M',
+        birth_year: 1940,
+        tree_id: 't1',
+        tree_name: 'Al-Ajrami',
+        protected: false,
+      },
+      {
+        person_id: 'p-minor',
+        display_name_ar: null,
+        display_name_en: null,
+        gender: null,
+        birth_year: null,
+        tree_id: 't2',
+        tree_name: null,
+        protected: true,
+      },
+    ];
+    render(
+      <LocaleProvider>
+        <VillageDetailClient place={AL_TIRA} persons={people} surnames={[]} profile={null} />
+      </LocaleProvider>,
+    );
+    // adult shows; protected minor is anonymised
+    expect(screen.queryByText(/محمد العجرمي/)).not.toBeNull();
+    expect(screen.queryByText(/فرد محمي/)).not.toBeNull();
   });
 
   it('shows no sourcing note for a non-depopulated place without a profile', () => {

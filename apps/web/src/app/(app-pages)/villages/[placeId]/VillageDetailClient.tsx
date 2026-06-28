@@ -13,6 +13,7 @@ import {
   Files,
   Image as ImageIcon,
   Landmark,
+  Lock,
   MapPin,
   Network,
   Plus,
@@ -257,6 +258,26 @@ export function VillageDetailClient({
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2">
               {persons.map((p, i) => {
+                if (p.protected) {
+                  return (
+                    <motion.li
+                      key={p.person_id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: Math.min(i * 0.02, 0.4) }}
+                    >
+                      <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--jt-stone-200)] bg-[var(--jt-stone-50)]/60 p-3 text-sm">
+                        <span className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[var(--jt-stone-100)] text-[var(--jt-stone-400)]">
+                          <Lock className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-[var(--jt-stone-500)]">{t('فرد محمي', 'Protected record')}</p>
+                          <p className="truncate text-[11px] text-[var(--jt-stone-400)]">{t('قاصر — محمي بموجب الخصوصية', 'Minor — withheld for privacy')}</p>
+                        </div>
+                      </div>
+                    </motion.li>
+                  );
+                }
                 const name = isAR
                   ? p.display_name_ar || p.display_name_en
                   : p.display_name_en || p.display_name_ar;

@@ -113,7 +113,32 @@ export type PlacePerson = {
   birth_year: number | null;
   tree_id: string;
   tree_name: string | null;
+  /** Privacy §11: a living child under 16 from a tree the viewer can't manage —
+   *  identity is withheld from this public list. Name/year are nulled. */
+  protected: boolean;
 };
+
+/** Tree ids the current viewer may manage (owner or approved collaborator).
+ *  Used to decide whether protected (minor) records may be revealed. */
+async function viewerWritableTreeIds(
+  supabase: Awaited<ReturnType<typeof createJuthoorSupabaseClient>>,
+): Promise<Set<string>> {
+  const { data: authData } = await supabase.auth.getUser();
+  const uid = authData.user?.id;
+  const writable = new Set<string>();
+  if (!uid) return writable;
+  const [owned, member] = await Promise.all([
+    supabase.from('trees').select('id').eq('owner_id', uid),
+    supabase.from('tree_members').select('tree_id, role, status').eq('user_id', uid),
+  ]);
+  for (const r of (owned.data ?? []) as Array<{ id: string }>) writable.add(r.id);
+  for (const m of (member.data ?? []) as Array<{ tree_id: string; role: string; status: string }>) {
+    if (m.status === 'approved' && (m.role === 'owner' || m.role === 'collaborator')) {
+      writable.add(m.tree_id);
+    }
+  }
+  return writable;
+}
 
 /** People whose BIRT event references this place. Two-step (events → persons,
  *  then trees) — keeping RLS happy and avoiding the nested-!inner quirk where
@@ -138,9 +163,12 @@ export async function loadPersonsFromPlace(
 
   const { data: personRows, error: pErr } = await supabase
     .from('persons')
-    .select('id, display_name_ar, display_name_en, gender, tree_id')
+    .select('id, display_name_ar, display_name_en, gender, tree_id, is_living')
     .in('id', personIds);
   if (pErr) throw new Error(`Failed to load persons: ${pErr.message}`);
+
+  const writableTrees = await viewerWritableTreeIds(supabase);
+  const currentYear = new Date().getUTCFullYear();
 
   const treeIds = Array.from(
     new Set(((personRows ?? []) as Array<{ tree_id: string }>).map((r) => r.tree_id)),
@@ -166,16 +194,26 @@ export async function loadPersonsFromPlace(
     display_name_en: string | null;
     gender: string | null;
     tree_id: string;
+    is_living: boolean | null;
   };
-  return ((personRows ?? []) as PersonRow[]).map((p) => ({
-    person_id: p.id,
-    display_name_ar: p.display_name_ar,
-    display_name_en: p.display_name_en,
-    gender: p.gender,
-    birth_year: yearByPerson.get(p.id) ?? null,
-    tree_id: p.tree_id,
-    tree_name: treeNameById.get(p.tree_id) ?? null,
-  }));
+  return ((personRows ?? []) as PersonRow[]).map((p) => {
+    const birthYear = yearByPerson.get(p.id) ?? null;
+    // Privacy §11: a living child under 16, in a tree the viewer can't manage,
+    // is not shown publicly — withhold identity (name + year).
+    const isMinor =
+      p.is_living === true && birthYear != null && currentYear - birthYear < 16;
+    const isProtected = isMinor && !writableTrees.has(p.tree_id);
+    return {
+      person_id: p.id,
+      display_name_ar: isProtected ? null : p.display_name_ar,
+      display_name_en: isProtected ? null : p.display_name_en,
+      gender: isProtected ? null : p.gender,
+      birth_year: isProtected ? null : birthYear,
+      tree_id: p.tree_id,
+      tree_name: isProtected ? null : treeNameById.get(p.tree_id) ?? null,
+      protected: isProtected,
+    };
+  });
 }
 
 export type SurnameGroupItem = {
