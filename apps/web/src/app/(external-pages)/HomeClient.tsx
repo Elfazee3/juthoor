@@ -40,9 +40,9 @@ const DOTS = [
 
 const START_CARDS = [
   { icon: Info, titleAr: 'من نحن', titleEn: 'Who we are', subAr: 'رسالتنا والقصة وراء هذه المنصّة', subEn: 'Our mission and the story behind this platform', href: '/about' },
-  { icon: Heart, titleAr: 'لماذا نفعل هذا', titleEn: 'Why we do this', subAr: 'الهوية، حقّ العودة، ولماذا هذا مهمّ الآن', subEn: 'Identity, the right of return, and why it matters now', href: '/about' },
-  { icon: Route, titleAr: 'كيف يعمل هذا', titleEn: 'How it works', subAr: 'بناء شجرتك، الخصوصية، والشجرة الأم', subEn: 'Building your tree, privacy, and the master tree', href: '/about' },
-  { icon: Mail, titleAr: 'تواصل معنا', titleEn: 'Contact us', subAr: 'أسئلة، شراكات، ودعم', subEn: 'Questions, partnerships, and support', href: 'mailto:hello@juthoor.app' },
+  { icon: Heart, titleAr: 'لماذا نفعل هذا', titleEn: 'Why we do this', subAr: 'الهوية، حقّ العودة، ولماذا هذا مهمّ الآن', subEn: 'Identity, the right of return, and why it matters now', href: '/why' },
+  { icon: Route, titleAr: 'كيف يعمل هذا', titleEn: 'How it works', subAr: 'بناء شجرتك، الخصوصية، والشجرة الأم', subEn: 'Building your tree, privacy, and the master tree', href: '/how' },
+  { icon: Mail, titleAr: 'تواصل معنا', titleEn: 'Contact us', subAr: 'أسئلة، شراكات، ودعم', subEn: 'Questions, partnerships, and support', href: '/contact' },
 ];
 
 export function HomeClient({ villages }: { villages: Village[] }) {

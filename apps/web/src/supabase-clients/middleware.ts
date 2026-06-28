@@ -42,6 +42,9 @@ export async function updateSession(request: NextRequest) {
   const publicExact = new Set(['/']);
   const publicPrefixes = [
     '/about',
+    '/why',
+    '/how',
+    '/contact',
     '/privacy',
     '/terms',
     '/login',

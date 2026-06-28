@@ -37,6 +37,8 @@ export function SignUp({ next }: { next?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  // T&C Art 2.2 / Privacy §11: must be 16+ and accept the Terms & Privacy Policy.
+  const [agreed, setAgreed] = useState(false);
 
   // Render the form client-side only. Form-filler browser extensions
   // stamp attributes (fdprocessedid) onto SSR'd inputs before React
@@ -170,13 +172,33 @@ export function SignUp({ next }: { next?: string }) {
                   />
                 </div>
 
+                <label className="flex items-start gap-2.5 rounded-xl border border-[var(--jt-stone-200)] bg-[var(--jt-stone-50)]/60 p-3">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 flex-none accent-[var(--jt-olive-700)]"
+                  />
+                  <span className="text-xs text-[var(--jt-stone-700)]" style={{ lineHeight: 1.6 }}>
+                    {t('أؤكّد أنّ عمري 16 عامًا أو أكثر، وأوافق على ', 'I confirm I am 16 or older and agree to the ')}
+                    <a href="/terms" target="_blank" className="font-semibold text-[var(--jt-olive-700)] underline underline-offset-2">
+                      {t('الشروط', 'Terms')}
+                    </a>
+                    {t(' و', ' & ')}
+                    <a href="/privacy" target="_blank" className="font-semibold text-[var(--jt-olive-700)] underline underline-offset-2">
+                      {t('سياسة الخصوصية', 'Privacy Policy')}
+                    </a>
+                    {t('.', '.')}
+                  </span>
+                </label>
+
                 {error && (
                   <div className="rounded-xl bg-[var(--jt-terra-50)] p-3 text-sm text-[var(--jt-terra-700)]">{error}</div>
                 )}
 
                 <Button
                   type="submit"
-                  disabled={busy || !email.trim() || !displayName.trim()}
+                  disabled={busy || !email.trim() || !displayName.trim() || !agreed}
                   className="w-full bg-[var(--jt-olive-700)] hover:bg-[var(--jt-olive-800)]"
                 >
                   {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Mail className="me-2 h-4 w-4" />}
