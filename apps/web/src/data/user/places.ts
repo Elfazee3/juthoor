@@ -105,6 +105,37 @@ export async function loadPlaceProfile(
   return (data as PlaceProfile | null) ?? null;
 }
 
+export type PlaceGalleryItem = {
+  url: string;
+  caption_ar?: string | null;
+  caption_en?: string | null;
+  year?: number | null;
+};
+export type PlaceDocItem = {
+  url: string;
+  label_ar?: string | null;
+  label_en?: string | null;
+};
+export type PlaceMedia = {
+  gallery: PlaceGalleryItem[];
+  documents: PlaceDocItem[];
+};
+
+/** Curated per-village photo gallery (7.0) + document archive (8.0).
+ *  Separate from loadPlaceProfile so it degrades to empty (and never regresses
+ *  the rest of the profile) if the `gallery`/`documents` columns aren't migrated. */
+export async function loadPlaceMedia(placeId: string): Promise<PlaceMedia> {
+  const supabase = await createJuthoorSupabaseClient();
+  const { data, error } = await supabase
+    .from('place_profiles')
+    .select('gallery, documents')
+    .eq('place_id', placeId)
+    .maybeSingle();
+  if (error || !data) return { gallery: [], documents: [] };
+  const d = data as { gallery?: PlaceGalleryItem[] | null; documents?: PlaceDocItem[] | null };
+  return { gallery: d.gallery ?? [], documents: d.documents ?? [] };
+}
+
 export type PlacePerson = {
   person_id: string;
   display_name_ar: string | null;

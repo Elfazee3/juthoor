@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import {
   loadPlaceById,
   loadPlaceProfile,
+  loadPlaceMedia,
   loadPersonsFromPlace,
   loadSurnamesFromPlace,
 } from '@/data/user/places';
@@ -11,10 +12,11 @@ import { VillageDetailClient } from './VillageDetailClient';
 async function VillageDetailContainer({ placeId }: { placeId: string }) {
   const place = await loadPlaceById(placeId);
   if (!place) notFound();
-  const [persons, surnames, profile] = await Promise.all([
+  const [persons, surnames, profile, media] = await Promise.all([
     loadPersonsFromPlace(placeId).catch(() => []),
     loadSurnamesFromPlace(placeId).catch(() => []),
     loadPlaceProfile(placeId).catch(() => null),
+    loadPlaceMedia(placeId).catch(() => ({ gallery: [], documents: [] })),
   ]);
   return (
     <VillageDetailClient
@@ -22,6 +24,7 @@ async function VillageDetailContainer({ placeId }: { placeId: string }) {
       persons={persons}
       surnames={surnames}
       profile={profile}
+      media={media}
     />
   );
 }

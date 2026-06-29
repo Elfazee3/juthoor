@@ -237,6 +237,8 @@ type MutablePlaceProfile = {
   source_attribution_ar: string | null;
   source_attribution_en: string | null;
   external_links: PlaceExternalLink[] | null;
+  gallery: unknown[] | null;
+  documents: unknown[] | null;
   updated_at: string;
   updated_by: string | null;
 };

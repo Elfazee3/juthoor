@@ -24,6 +24,7 @@ import {
 import { useLocale } from '@/contexts/LocaleContext';
 import type {
   PlaceDetail,
+  PlaceMedia,
   PlacePerson,
   PlaceProfile,
   SurnameGroupItem,
@@ -57,13 +58,17 @@ export function VillageDetailClient({
   persons,
   surnames,
   profile,
+  media,
 }: {
   place: PlaceDetail;
   persons: PlacePerson[];
   surnames: SurnameGroupItem[];
   profile?: PlaceProfile | null;
+  media?: PlaceMedia;
 }) {
   const { t, locale, dir } = useLocale();
+  const gallery = media?.gallery ?? [];
+  const documents = media?.documents ?? [];
   const isAR = locale === 'ar';
   const Arrow = isAR ? ArrowLeft : ArrowRight;
   const Sep = isAR ? ChevronLeft : ChevronRight;
@@ -194,13 +199,13 @@ export function VillageDetailClient({
             icon={ImageIcon}
             title={t('معرض الصور', 'View photo gallery')}
             sub={t('صور تاريخية وصور مساهمة من العائلات', 'Historical and family-contributed images')}
-            soon={t('قريبًا', 'Soon')}
+            href="#gallery"
           />
           <ActionButton
             icon={Files}
             title={t('أرشيف الوثائق', 'View document archive')}
             sub={t('سجلات الأرض والشهادات والوثائق', 'Land records, testimonies, documents')}
-            soon={t('قريبًا', 'Soon')}
+            href="#archive"
           />
           <ActionButton
             icon={ExternalLink}
@@ -314,6 +319,87 @@ export function VillageDetailClient({
                       <Arrow className="h-3.5 w-3.5 flex-none text-[var(--jt-stone-400)] transition-colors group-hover:text-[var(--jt-olive-600)]" />
                     </Link>
                   </motion.li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* ── Photo gallery (flow 7.0) ── */}
+        <section id="gallery" className="mt-10 scroll-mt-6">
+          <SectionHead
+            kicker={t('صور', 'Photos')}
+            title={t('معرض الصور', 'Photo gallery')}
+            note={gallery.length ? t(`${gallery.length} صورة`, `${gallery.length} photos`) : undefined}
+          />
+          {gallery.length === 0 ? (
+            <EmptyHint
+              ar="ستظهر الصور التاريخية وصور العائلات هنا مع مساهمات الأهالي."
+              en="Historical and family photos will appear here as families contribute."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {gallery.map((g, i) => {
+                const cap = pick(g.caption_ar, g.caption_en);
+                return (
+                  <a
+                    key={`${g.url}-${i}`}
+                    href={g.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group relative block aspect-square overflow-hidden rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--jt-stone-100)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={g.url}
+                      alt={cap ?? ''}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    {(cap || g.year) && (
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-2 text-[11px] text-white">
+                        {cap}
+                        {g.year ? ` · ${g.year}` : ''}
+                      </span>
+                    )}
+                  </a>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* ── Document archive (flow 8.0) ── */}
+        <section id="archive" className="mt-10 scroll-mt-6">
+          <SectionHead
+            kicker={t('وثائق', 'Documents')}
+            title={t('أرشيف الوثائق', 'Document archive')}
+            note={documents.length ? t(`${documents.length} وثيقة`, `${documents.length} documents`) : undefined}
+          />
+          {documents.length === 0 ? (
+            <EmptyHint
+              ar="سجلات الأرض والشهادات والوثائق القانونية ستُجمع هنا."
+              en="Land records, testimonies, and legal documents will be gathered here."
+            />
+          ) : (
+            <ul className="space-y-2">
+              {documents.map((d, i) => {
+                const label = pick(d.label_ar, d.label_en) ?? d.url;
+                return (
+                  <li key={`${d.url}-${i}`}>
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-3 rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-3 text-sm transition-all hover:-translate-y-0.5 hover:border-[var(--jt-olive-400)]"
+                    >
+                      <span className="inline-flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[var(--jt-olive-100)] text-[var(--jt-olive-700)]">
+                        <FileText className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium text-[var(--jt-stone-800)]">{label}</span>
+                      <ExternalLink className="h-3.5 w-3.5 flex-none text-[var(--jt-stone-400)] transition-colors group-hover:text-[var(--jt-olive-600)]" />
+                    </a>
+                  </li>
                 );
               })}
             </ul>
