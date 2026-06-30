@@ -95,7 +95,9 @@ export function SignUp({ next }: { next?: string }) {
             : text,
         );
       }
-      router.push(next ?? '/dashboard');
+      // Continue the registration wizard into the Identity → Family steps
+      // (mockup flow 1.1). The verify page is skippable, so this never blocks.
+      router.push(next ?? '/verify?from=signup');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('الرمز غير صحيح', 'Invalid code'));
     } finally {

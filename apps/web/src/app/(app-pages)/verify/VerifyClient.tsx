@@ -234,6 +234,13 @@ export function VerifyClient({
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {t('إرسال للمراجعة', 'Submit for review')}
             </button>
+
+            <a
+              href="/dashboard"
+              className="mt-3 block text-center text-xs font-medium text-[var(--jt-stone-500)] underline underline-offset-2 hover:text-[var(--jt-olive-700)]"
+            >
+              {t('تخطّ الآن واستكشف المنصّة', 'Skip for now and explore the platform')}
+            </a>
           </section>
         </div>
       )}
