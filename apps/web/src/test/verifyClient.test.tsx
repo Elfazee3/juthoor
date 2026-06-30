@@ -51,4 +51,14 @@ describe('VerifyClient — identity verification states', () => {
     renderVerify({ ...base, status: 'approved' });
     expect(screen.queryByText(/تم توثيق هويتك/)).not.toBeNull(); // "Your identity is verified"
   });
+
+  it('renders the optional tree picker when trees are provided', () => {
+    render(
+      <LocaleProvider>
+        <VerifyClient initialVerification={null} trees={[{ id: 't1', name: 'Al-Khalili' }]} />
+      </LocaleProvider>,
+    );
+    expect(screen.queryByText(/أيّ شجرة عائلة/)).not.toBeNull(); // "Which family tree…"
+    expect(screen.queryByText(/Al-Khalili/)).not.toBeNull();
+  });
 });

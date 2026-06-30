@@ -26,9 +26,12 @@ export type IdentityVerification = {
 
 export type PendingVerification = IdentityVerification & {
   submitter_name: string | null;
+  tree_name: string | null;
   id_document_url: string | null;
   family_evidence_url: string | null;
 };
+
+export type SelectableTree = { id: string; name: string | null };
 
 const SELECT_COLS =
   'id, user_id, tree_id, id_document_path, id_document_type, family_evidence_path, family_evidence_note, status, reviewer_note, reviewed_at, created_at';
@@ -135,13 +138,17 @@ export async function listPendingVerifications(): Promise<PendingVerification[]>
   if (rows.length === 0) return [];
 
   const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, display_name, display_name_ar')
-    .in('id', userIds);
+  const treeIds = Array.from(new Set(rows.map((r) => r.tree_id).filter(Boolean) as string[]));
+  const [{ data: profiles }, treesRes] = await Promise.all([
+    supabase.from('profiles').select('id, display_name, display_name_ar').in('id', userIds),
+    treeIds.length
+      ? supabase.from('trees').select('id, name').in('id', treeIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; name: string | null }> }),
+  ]);
   const nameById = new Map(
     (profiles ?? []).map((p) => [p.id, p.display_name_ar || p.display_name || null]),
   );
+  const treeNameById = new Map((treesRes.data ?? []).map((t) => [t.id, t.name]));
 
   const signed = await Promise.all(
     rows.map(async (r) => {
@@ -154,6 +161,7 @@ export async function listPendingVerifications(): Promise<PendingVerification[]>
       return {
         ...r,
         submitter_name: nameById.get(r.user_id) ?? null,
+        tree_name: r.tree_id ? treeNameById.get(r.tree_id) ?? null : null,
         id_document_url: idUrl.data?.signedUrl ?? null,
         family_evidence_url: famUrl.data?.signedUrl ?? null,
       };
@@ -168,15 +176,42 @@ const ReviewSchema = z.object({
   note: z.string().trim().max(2000).optional(),
 });
 
-/** Admin: approve or reject a verification request. */
+/** Admin: approve or reject a verification request. On approval, if the request
+ *  targets a specific tree, the submitter is granted collaborator (edit) access
+ *  to that tree first — so "approved" always means "can now edit". The admin's
+ *  is_admin() RLS permits the tree_members grant. */
 export async function reviewVerification(
   input: z.input<typeof ReviewSchema>,
 ): Promise<void> {
   const parsed = ReviewSchema.parse(input);
   const supabase = await createJuthoorSupabaseClient();
   const reviewerId = await assertAdmin(supabase);
-
   const now = new Date().toISOString();
+
+  if (parsed.approve) {
+    const { data: row } = await supabase
+      .from('identity_verifications')
+      .select('user_id, tree_id')
+      .eq('id', parsed.id)
+      .maybeSingle();
+    const v = row as { user_id: string; tree_id: string | null } | null;
+    if (v?.tree_id && v.user_id) {
+      const { error: grantErr } = await supabase.from('tree_members').upsert(
+        {
+          tree_id: v.tree_id,
+          user_id: v.user_id,
+          role: 'collaborator',
+          status: 'approved',
+          accepted_at: now,
+          reviewed_at: now,
+          reviewed_by: reviewerId,
+        },
+        { onConflict: 'tree_id,user_id' },
+      );
+      if (grantErr) throw new Error(`Failed to grant tree access: ${grantErr.message}`);
+    }
+  }
+
   const { error } = await supabase
     .from('identity_verifications')
     .update({
@@ -188,4 +223,17 @@ export async function reviewVerification(
     })
     .eq('id', parsed.id);
   if (error) throw new Error(`Failed to review: ${error.message}`);
+}
+
+/** Trees the current user can target when verifying (their own + public /
+ *  accessible, per RLS), so an approved verification grants edit access to it. */
+export async function listVerifiableTrees(): Promise<SelectableTree[]> {
+  const supabase = await createJuthoorSupabaseClient();
+  const { data, error } = await supabase
+    .from('trees')
+    .select('id, name')
+    .order('name', { ascending: true })
+    .limit(100);
+  if (error) return [];
+  return (data ?? []) as SelectableTree[];
 }

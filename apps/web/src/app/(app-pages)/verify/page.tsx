@@ -1,4 +1,4 @@
-import { getMyVerification } from '@/data/user/identityVerification';
+import { getMyVerification, listVerifiableTrees } from '@/data/user/identityVerification';
 import { VerifyClient } from './VerifyClient';
 
 export const metadata = {
@@ -8,6 +8,9 @@ export const metadata = {
 };
 
 export default async function VerifyPage() {
-  const verification = await getMyVerification().catch(() => null);
-  return <VerifyClient initialVerification={verification} />;
+  const [verification, trees] = await Promise.all([
+    getMyVerification().catch(() => null),
+    listVerifiableTrees().catch(() => []),
+  ]);
+  return <VerifyClient initialVerification={verification} trees={trees} />;
 }

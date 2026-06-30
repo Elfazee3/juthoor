@@ -92,6 +92,11 @@ export function AdminVerificationsClient({
                     {' · '}
                     {new Date(v.created_at).toLocaleDateString(locale === 'ar' ? 'ar' : 'en')}
                   </p>
+                  {v.tree_name && (
+                    <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-[var(--jt-olive-50)] px-2 py-0.5 text-[11px] font-medium text-[var(--jt-olive-700)]">
+                      {t('سيُمنح تحرير:', 'Grants edit on:')} {v.tree_name}
+                    </p>
+                  )}
                 </div>
                 <div dir="ltr" className="flex items-center gap-2">
                   <button

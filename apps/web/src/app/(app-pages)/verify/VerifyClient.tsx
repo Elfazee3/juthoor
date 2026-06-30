@@ -17,6 +17,7 @@ import {
   submitVerification,
   type IdDocumentType,
   type IdentityVerification,
+  type SelectableTree,
 } from '@/data/user/identityVerification';
 
 const BUCKET = 'verification-docs';
@@ -43,11 +44,14 @@ async function uploadDoc(file: File): Promise<string> {
 
 export function VerifyClient({
   initialVerification,
+  trees = [],
 }: {
   initialVerification: IdentityVerification | null;
+  trees?: SelectableTree[];
 }) {
   const { t, dir } = useLocale();
   const [verification, setVerification] = useState(initialVerification);
+  const [treeId, setTreeId] = useState('');
   const [idType, setIdType] = useState<IdDocumentType>('passport');
   const [idFile, setIdFile] = useState<File | null>(null);
   const [famFile, setFamFile] = useState<File | null>(null);
@@ -74,6 +78,7 @@ export function VerifyClient({
         idDocumentType: idType,
         familyEvidencePath,
         familyEvidenceNote: famNote.trim() || undefined,
+        treeId: treeId || undefined,
       });
       setVerification(v);
     } catch (e) {
@@ -127,6 +132,33 @@ export function VerifyClient({
             <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
               {t('تحقّق من هويتك', 'Verify your identity')}
             </h2>
+
+            {/* Target tree — on approval the admin grants you edit access to it */}
+            {trees.length > 0 && (
+              <label className="mb-4 mt-5 flex flex-col gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-stone-500)]">
+                  {t('أيّ شجرة عائلة تريد إدارتها؟ (اختياري)', 'Which family tree do you want to manage? (optional)')}
+                </span>
+                <select
+                  value={treeId}
+                  onChange={(e) => setTreeId(e.target.value)}
+                  className="rounded-xl border border-[var(--jt-stone-200)] bg-[var(--background)] px-4 py-2.5 text-sm outline-none focus:border-[var(--jt-olive-400)]"
+                >
+                  <option value="">{t('— لا شيء (توثيق هوية عام) —', '— None (general identity check) —')}</option>
+                  {trees.map((tr) => (
+                    <option key={tr.id} value={tr.id}>
+                      {tr.name ?? tr.id}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[11px] text-[var(--jt-stone-400)]">
+                  {t(
+                    'عند الموافقة، سيمنحك المسؤول صلاحية التحرير على هذه الشجرة.',
+                    'On approval, the administrator grants you edit access to this tree.',
+                  )}
+                </span>
+              </label>
+            )}
 
             {/* ID type */}
             <label className="mb-4 mt-5 flex flex-col gap-1.5">
