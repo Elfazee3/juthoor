@@ -289,3 +289,89 @@
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
+
+/* ═══════════════════════════════════════════════════
+   JUTHOOR MOTION UTILITIES — جذور
+   Shared visual-polish helpers for the public pages.
+   ═══════════════════════════════════════════════════ */
+
+/* Tatreez cross-stitch texture — white, for dark (olive) surfaces */
+.jt-tatreez-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M6 4l4 4M10 4l-4 4'/%3E%3Cpath d='M20 16l4 4M24 16l-4 4'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 28px 28px;
+}
+
+/* Tatreez cross-stitch texture — stone, for light surfaces */
+.jt-tatreez-dark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cg fill='none' stroke='%235E5341' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M6 4l4 4M10 4l-4 4'/%3E%3Cpath d='M20 16l4 4M24 16l-4 4'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 28px 28px;
+}
+
+/* Slow drift of the flag-colored tatreez stripe */
+@keyframes jt-stripe-flow {
+  from { background-position: 0 0; }
+  to   { background-position: 96px 0; }
+}
+.jt-stripe-flow {
+  animation: jt-stripe-flow 14s linear infinite;
+}
+
+/* Shine sweep across buttons on hover */
+.jt-btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.jt-btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: -40% auto;
+  width: 36%;
+  left: -60%;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+.jt-btn-shine:hover::after {
+  left: 130%;
+}
+[dir='rtl'] .jt-btn-shine::after {
+  left: auto;
+  right: -60%;
+  transition: right 0.55s ease;
+}
+[dir='rtl'] .jt-btn-shine:hover::after {
+  right: 130%;
+}
+
+/* Soft breathing glow (hero backdrop) */
+@keyframes jt-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 0.6;  transform: scale(1.12); }
+}
+.jt-breathe {
+  animation: jt-breathe 9s ease-in-out infinite;
+}
+
+/* Gentle float for decorative elements */
+@keyframes jt-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+.jt-float {
+  animation: jt-float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jt-stripe-flow,
+  .jt-breathe,
+  .jt-float,
+  .animate-marquee,
+  .animate-marquee-vertical {
+    animation: none;
+  }
+  .jt-btn-shine::after {
+    display: none;
+  }
+}
