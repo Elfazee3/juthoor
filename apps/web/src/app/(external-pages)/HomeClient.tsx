@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
 import { useLocale } from '@/contexts/LocaleContext';
 import { CountUp } from '@/components/home/CountUp';
 import { DiasporaConstellation } from '@/components/home/DiasporaConstellation';
+import { ScrollWords } from '@/components/about/ScrollWords';
 import { type ReactNode } from 'react';
 
 type Village = {
@@ -73,6 +75,7 @@ export function HomeClient({ villages }: { villages: Village[] }) {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--jt-olive-100)_0%,_transparent_55%)] opacity-60" />
         <div className="absolute inset-x-0 bottom-0 h-[420px] bg-[radial-gradient(ellipse_at_bottom,_var(--jt-gold-100)_0%,_transparent_60%)] opacity-50" />
+        <div className="absolute top-1/3 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_var(--jt-terra-100)_0%,_transparent_70%)] opacity-40 blur-2xl ltr:-left-24 rtl:-right-24" />
       </div>
 
       <div className="mx-auto max-w-4xl px-5 py-10 md:py-14">
@@ -103,6 +106,8 @@ export function HomeClient({ villages }: { villages: Village[] }) {
             }}
           />
 
+          <div className="relative md:flex md:items-center md:gap-10">
+            <div className="min-w-0 flex-1">
           <motion.span
             variants={rise}
             className="relative inline-block rounded-full border border-white/10 bg-white/12 px-3 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm"
@@ -172,6 +177,28 @@ export function HomeClient({ villages }: { villages: Village[] }) {
             />
             <HeroStat value={t('مجّاني', 'Free')} label={t('للأبد، بلا إعلانات', 'forever, ad-free')} />
           </motion.div>
+            </div>
+
+            {/* hero artwork — olive tree whose roots form the family network */}
+            <motion.div variants={rise} className="relative hidden flex-none md:block md:w-[250px] lg:w-[300px]">
+              <div
+                aria-hidden
+                className="absolute -inset-5 rounded-[2.5rem] opacity-40 blur-2xl"
+                style={{ background: 'radial-gradient(circle, var(--jt-gold-400) 0%, transparent 70%)' }}
+              />
+              <div className="jt-float relative overflow-hidden rounded-3xl shadow-[var(--jt-shadow-xl)] ring-1 ring-white/25">
+                <Image
+                  src="/images/home/olive-tree.png"
+                  alt={t('شجرة زيتون تمتدّ جذورها لتشكّل شبكة عائلة متّصلة', 'An olive tree whose roots form a connected family network')}
+                  width={1024}
+                  height={1024}
+                  sizes="300px"
+                  priority
+                  className="h-auto w-full"
+                />
+              </div>
+            </motion.div>
+          </div>
         </motion.section>
 
         {/* ═══════ DIASPORA MAP ═══════ */}
@@ -187,11 +214,13 @@ export function HomeClient({ villages }: { villages: Village[] }) {
               <DiasporaConstellation className="h-full w-full" />
             </div>
             <div className="flex-1 text-sm text-[var(--jt-stone-600)]" style={{ lineHeight: 1.65 }}>
-              <span className="font-semibold text-[var(--jt-olive-900)]">{t('من حيفا إلى سانتياغو.', 'From Haifa to Santiago.')}</span>{' '}
-              {t(
-                'كلّ نقطة عائلة موثّقة. العائلات من القرية نفسها تتناثر في عشرات الدول — وهنا يصبح هذا التشتّت مرئيًّا في مكان واحد لأول مرّة.',
-                'Every dot is a documented family. Families from one village scatter across dozens of countries — here that scatter becomes visible in one place for the first time.',
-              )}
+              <span className="mb-1 block font-semibold text-[var(--jt-olive-900)]">{t('من حيفا إلى سانتياغو.', 'From Haifa to Santiago.')}</span>
+              <ScrollWords
+                text={t(
+                  'كلّ نقطة عائلة موثّقة. العائلات من القرية نفسها تتناثر في عشرات الدول — وهنا يصبح هذا التشتّت مرئيًّا في مكان واحد لأول مرّة.',
+                  'Every dot is a documented family. Families from one village scatter across dozens of countries — here that scatter becomes visible in one place for the first time.',
+                )}
+              />
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-[var(--jt-stone-200)]/60 pt-3 text-[11px] text-[var(--jt-stone-500)]">
@@ -263,22 +292,39 @@ export function HomeClient({ villages }: { villages: Village[] }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-40px' }}
-          className="relative mt-8 overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--jt-terra-50)] via-[var(--jt-gold-50)] to-[var(--jt-olive-50)] px-6 py-8 text-center shadow-[var(--jt-shadow-sm)]"
+          className="relative mt-8 overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--jt-terra-50)] via-[var(--jt-gold-50)] to-[var(--jt-olive-50)] text-center shadow-[var(--jt-shadow-sm)]"
         >
           <div aria-hidden className="jt-tatreez-dark absolute inset-0 opacity-[0.05]" />
-          <span className="jt-float relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-white shadow-[var(--jt-shadow-md)]">
-            <Sprout className="h-5 w-5" />
-          </span>
-          <p className="relative mt-3 text-[15px] text-[var(--jt-stone-800)]">
-            {t('قصّة عائلتك تنتمي إلى هنا. يستغرق البدء حوالي عشر دقائق.', "Your family's story belongs here. It takes about ten minutes to begin.")}
-          </p>
-          <Link
-            href="/sign-up"
-            className="jt-btn-shine relative mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--jt-terra-500)] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_var(--jt-terra-500)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-terra-600)] hover:shadow-[0_14px_28px_-8px_var(--jt-terra-600)] active:translate-y-0"
-          >
-            {t('أنشئ شجرة عائلتك', 'Create your family tree')}
-            <Arrow className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          <div className="relative px-6 pt-8 pb-2">
+            <span className="jt-float relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-white shadow-[var(--jt-shadow-md)]">
+              <Sprout className="h-5 w-5" />
+            </span>
+            <p className="relative mt-3 text-[15px] text-[var(--jt-stone-800)]">
+              {t('قصّة عائلتك تنتمي إلى هنا. يستغرق البدء حوالي عشر دقائق.', "Your family's story belongs here. It takes about ten minutes to begin.")}
+            </p>
+            <Link
+              href="/sign-up"
+              className="jt-btn-shine relative mt-4 inline-flex items-center gap-2 rounded-lg bg-[var(--jt-terra-500)] px-6 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_var(--jt-terra-500)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-terra-600)] hover:shadow-[0_14px_28px_-8px_var(--jt-terra-600)] active:translate-y-0"
+            >
+              {t('أنشئ شجرة عائلتك', 'Create your family tree')}
+              <Arrow className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+          {/* village horizon — generated artwork */}
+          <div className="relative mt-4 h-28 w-full sm:h-36">
+            <Image
+              src="/images/home/village-panorama.png"
+              alt=""
+              fill
+              sizes="(max-width: 940px) 100vw, 896px"
+              className="object-cover"
+              style={{ objectPosition: 'center 72%' }}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-[var(--jt-gold-50)] to-transparent"
+            />
+          </div>
         </motion.section>
       </div>
     </div>
