@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { LocaleToggle } from '@/components/LocaleToggle';
+import { MobileNavigation } from '@/app/MobileNavigation';
 import { useLocale } from '@/contexts/LocaleContext';
 
 const NAV_LINK_CLS =
@@ -65,6 +66,7 @@ export default function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <MobileNavigation />
           <LocaleToggle />
           <ModeToggle />
           <Button asChild variant="ghost" size="sm" className="hidden text-[var(--jt-stone-700)] hover:text-[var(--jt-olive-700)] sm:inline-flex">
@@ -73,7 +75,7 @@ export default function Navbar() {
           <Button
             asChild
             size="sm"
-            className="jt-btn-shine bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)]"
+            className="jt-btn-shine hidden bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)] sm:inline-flex"
           >
             <Link href="/sign-up">{t('ابدأ شجرتك', 'Start your tree')}</Link>
           </Button>
