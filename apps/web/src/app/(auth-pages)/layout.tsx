@@ -8,6 +8,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--jt-olive-100)_0%,_transparent_55%)] opacity-70"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[320px] bg-[radial-gradient(ellipse_at_bottom,_var(--jt-gold-100)_0%,_transparent_60%)] opacity-50"
+      />
+      <div aria-hidden className="jt-tatreez-dark pointer-events-none absolute inset-x-0 top-0 -z-10 h-[200px] opacity-[0.04]" />
       <header className="border-b border-[var(--jt-stone-200)]/60 bg-[var(--background)]/80 backdrop-blur">
         <div className="mx-auto flex max-w-screen-2xl items-center px-6 py-4">
           <Link href="/" className="group flex items-center gap-3">
@@ -32,7 +37,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="flex flex-1 items-center justify-center p-6">
-        {children}
+        <div className="flex w-full justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 [animation-fill-mode:both] motion-reduce:animate-none">
+          {children}
+        </div>
       </main>
     </div>
   );

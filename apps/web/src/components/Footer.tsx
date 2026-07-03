@@ -10,9 +10,19 @@ const Footer = () => {
   return (
     <footer
       dir={dir}
-      className="relative border-t border-[var(--jt-stone-200)]/60 bg-[var(--jt-stone-50)]/60"
+      className="relative overflow-hidden border-t border-[var(--jt-stone-200)]/60 bg-[var(--jt-stone-50)]/60"
     >
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(45deg, var(--jt-terra-500) 0 8px, var(--jt-gold-500) 8px 16px, var(--jt-olive-400) 16px 24px)',
+          opacity: 0.5,
+        }}
+      />
+      <div aria-hidden className="jt-tatreez-dark pointer-events-none absolute inset-0 opacity-[0.03]" />
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-6 py-14 md:grid-cols-[1.3fr_1fr_1fr_1fr]">
         <div>
           <Link href="/" className="inline-flex items-center gap-3">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]">
@@ -111,7 +121,10 @@ function FooterCol({
       <ul className="space-y-2.5">
         {items.map((i) => (
           <li key={i.label}>
-            <Link href={i.href} className="text-sm text-[var(--jt-stone-700)] transition-colors hover:text-[var(--jt-olive-700)]">
+            <Link
+              href={i.href}
+              className="inline-block text-sm text-[var(--jt-stone-700)] transition-[color,padding] duration-300 hover:ps-1 hover:text-[var(--jt-olive-700)]"
+            >
               {i.label}
             </Link>
           </li>
