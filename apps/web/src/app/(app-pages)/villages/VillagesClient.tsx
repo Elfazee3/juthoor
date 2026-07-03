@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, MapPin, Search, Tent, Users, X } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
+import { CountUp } from '@/components/home/CountUp';
 import type { PlaceListItem, PlaceTypeCounts } from '@/data/user/places';
 
 const TYPE_FILTERS = [
@@ -88,10 +89,10 @@ export function VillagesClient({
 
         {/* Stat strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat color="olive" value={counts.village} ar="قرية" en="Villages" />
-          <Stat color="gold" value={counts.city} ar="مدينة" en="Cities" />
-          <Stat color="terra" value={counts.clan_locality} ar="عشيرة" en="Clans · 3achira" />
-          <Stat color="stone" value={counts.khirba} ar="خربة" en="Ruins" />
+          <Stat color="olive" value={counts.village} ar="قرية" en="Villages" index={0} />
+          <Stat color="gold" value={counts.city} ar="مدينة" en="Cities" index={1} />
+          <Stat color="terra" value={counts.clan_locality} ar="عشيرة" en="Clans · 3achira" index={2} />
+          <Stat color="stone" value={counts.khirba} ar="خربة" en="Ruins" index={3} />
         </div>
 
         {/* Search + filter row */}
@@ -109,7 +110,7 @@ export function VillagesClient({
                 'ابحث: ترشيحا، Tarshiha، صفد، Tarabin...',
                 'Search: Tarshiha, Safad, Yafa, Tarabin…',
               )}
-              className="w-full rounded-2xl border border-[var(--jt-olive-200)]/60 bg-[var(--card)] py-3.5 ps-12 pe-12 text-base text-[var(--jt-stone-900)] placeholder:text-[var(--jt-stone-400)] shadow-[var(--jt-shadow-sm)] focus:border-[var(--jt-olive-500)] focus:outline-none focus:ring-2 focus:ring-[var(--jt-olive-300)]/40"
+              className="w-full rounded-2xl border border-[var(--jt-olive-200)]/60 bg-[var(--card)] py-3.5 ps-12 pe-12 text-base text-[var(--jt-stone-900)] placeholder:text-[var(--jt-stone-400)] shadow-[var(--jt-shadow-sm)] transition-[border-color,box-shadow] duration-300 focus:border-[var(--jt-olive-500)] focus:shadow-[var(--jt-shadow-md)] focus:outline-none focus:ring-2 focus:ring-[var(--jt-olive-300)]/40"
             />
             {query && (
               <button
@@ -144,9 +145,9 @@ export function VillagesClient({
                     });
                   }}
                   className={
-                    'rounded-full px-4 py-2 text-xs font-semibold transition-colors '
+                    'rounded-full px-4 py-2 text-xs font-semibold transition-all duration-300 active:scale-95 '
                     + (isActive
-                      ? 'bg-[var(--jt-olive-700)] text-[var(--jt-stone-50)]'
+                      ? 'bg-[var(--jt-olive-700)] text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)]'
                       : 'text-[var(--jt-stone-600)] hover:bg-[var(--jt-olive-50)] hover:text-[var(--jt-olive-800)]')
                   }
                 >
@@ -209,12 +210,15 @@ function Stat({
   value,
   ar,
   en,
+  index,
 }: {
   color: 'olive' | 'gold' | 'terra' | 'stone';
   value: number;
   ar: string;
   en: string;
+  index: number;
 }) {
+  const reduce = useReducedMotion();
   const fg =
     color === 'olive'
       ? 'var(--jt-olive-700)'
@@ -224,18 +228,28 @@ function Stat({
           ? 'var(--jt-terra-600)'
           : 'var(--jt-stone-700)';
   return (
-    <div className="rounded-2xl border border-[var(--jt-stone-200)]/70 bg-[var(--card)] p-4 shadow-[var(--jt-shadow-sm)]">
+    <motion.div
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 220, damping: 24, delay: 0.1 + index * 0.07 }}
+      className="group relative overflow-hidden rounded-2xl border border-[var(--jt-stone-200)]/70 bg-[var(--card)] p-4 shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--jt-shadow-md)]"
+    >
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-0.5 origin-center scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
+        style={{ backgroundColor: fg, opacity: 0.6 }}
+      />
       <p
         className="text-3xl font-bold leading-none"
         style={{ fontFamily: 'var(--jt-font-display)', color: fg }}
       >
-        {value.toLocaleString()}
+        <CountUp value={value} duration={1.2} />
       </p>
       <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-stone-500)]">
         <span className="hidden md:inline">{en}</span>
         <span className="md:hidden">{ar}</span>
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -299,7 +313,7 @@ function PlaceCard({
               </p>
             )}
           </div>
-          <Arrow className="mt-1 h-4 w-4 flex-none text-[var(--jt-stone-400)] transition-colors group-hover:text-[var(--jt-olive-600)]" />
+          <Arrow className="mt-1 h-4 w-4 flex-none text-[var(--jt-stone-400)] transition-all duration-300 group-hover:text-[var(--jt-olive-600)] ltr:group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
         </div>
         {place.depopulated_year && (
           <span className="mt-3 inline-flex items-center rounded-full bg-[var(--jt-terra-50)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--jt-terra-600)]">

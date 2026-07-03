@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Info, ScrollText } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import type { LegalBlock, LegalDocument, LegalSection } from '@/lib/legal/types';
@@ -16,6 +16,7 @@ import type { LegalBlock, LegalDocument, LegalSection } from '@/lib/legal/types'
  */
 export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
   const { t, locale, dir } = useLocale();
+  const reduce = useReducedMotion();
   const isAR = locale === 'ar';
 
   return (
@@ -23,10 +24,11 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--jt-olive-100)_0%,_transparent_55%)] opacity-50" />
       </div>
+      <div aria-hidden className="jt-tatreez-dark pointer-events-none absolute inset-x-0 top-0 -z-10 h-[200px] opacity-[0.04]" />
 
       {/* Header */}
       <section className="mx-auto max-w-3xl px-6 pt-28 pb-10 text-center">
-        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)]/70 bg-[var(--jt-olive-50)]/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--jt-olive-700)]">
+        <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)]/70 bg-[var(--jt-olive-50)]/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--jt-olive-700)] shadow-[var(--jt-shadow-sm)]">
           <ScrollText className="h-3.5 w-3.5" />
           {t(doc.versionAr, doc.versionEn)} · {t(doc.effectiveAr, doc.effectiveEn)}
         </span>
@@ -36,6 +38,23 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
         >
           {t(doc.titleAr, doc.titleEn)}
         </h1>
+        <motion.svg
+          aria-hidden
+          viewBox="0 0 220 10"
+          preserveAspectRatio="none"
+          className="mx-auto mt-2 block h-2.5 w-40"
+        >
+          <motion.path
+            d="M4 7 Q 110 1 216 6"
+            fill="none"
+            stroke="var(--jt-gold-400)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            initial={{ pathLength: reduce ? 1 : 0, opacity: reduce ? 1 : 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
+          />
+        </motion.svg>
         <p
           className="mx-auto mt-4 max-w-xl text-[var(--jt-stone-700)]"
           style={{ fontFamily: isAR ? 'var(--jt-font-arabic)' : 'var(--jt-font-latin)', lineHeight: isAR ? 1.9 : 1.6 }}
