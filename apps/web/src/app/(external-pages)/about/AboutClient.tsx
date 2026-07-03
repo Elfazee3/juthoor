@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ScrollProgress } from '@/components/ScrollProgress';
+import { ScrollWords } from '@/components/about/ScrollWords';
 
 const PRINCIPLES = [
   {
@@ -155,18 +156,13 @@ export function AboutClient() {
           {t('كيف بدأنا', 'How it started')}
         </motion.p>
         <div className="flex flex-col gap-10">
-          {STORY_PARAGRAPHS.map((p, i) => (
-            <motion.p
+          {STORY_PARAGRAPHS.map((p) => (
+            <ScrollWords
               key={p.en}
-              initial={{ opacity: 0, y: 28 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 1, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              text={t(p.ar, p.en)}
               className="text-[clamp(1.25rem,2.6vw,1.9rem)] font-normal leading-[1.6] text-[var(--jt-olive-900)]"
               style={{ fontFamily: 'var(--jt-font-display)' }}
-            >
-              {t(p.ar, p.en)}
-            </motion.p>
+            />
           ))}
         </div>
       </section>
@@ -201,17 +197,28 @@ export function AboutClient() {
               return (
                 <motion.div
                   key={p.titleEn}
-                  initial={{ opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 34, rotateX: -14, scale: 0.94 }}
+                  whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
                   viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.6, delay: (i % 3) * 0.08 }}
+                  transition={{ type: 'spring', stiffness: 150, damping: 19, delay: (i % 3) * 0.12 }}
+                  style={{ transformPerspective: 900 }}
                   className="group relative overflow-hidden rounded-3xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-7 shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-1 hover:border-[var(--jt-olive-300)] hover:shadow-[var(--jt-shadow-md)]"
                 >
-                  <div aria-hidden className="absolute -end-10 -top-10 h-28 w-28 rounded-full bg-[var(--jt-olive-50)] opacity-60 transition-transform group-hover:scale-125" />
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-0 top-0 h-0.5 origin-center scale-x-0 bg-gradient-to-r from-[var(--jt-olive-400)] via-[var(--jt-gold-400)] to-[var(--jt-terra-400)] transition-transform duration-500 group-hover:scale-x-100"
+                  />
+                  <div aria-hidden className="absolute -end-10 -top-10 h-28 w-28 rounded-full bg-[var(--jt-olive-50)] opacity-60 transition-transform duration-500 group-hover:scale-125" />
                   <div className="relative">
-                    <span className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--jt-olive-700)] text-[var(--jt-stone-50)]">
+                    <motion.span
+                      initial={{ scale: 0, rotate: -10 }}
+                      whileInView={{ scale: 1, rotate: 0 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 16, delay: (i % 3) * 0.12 + 0.18 }}
+                      className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--jt-olive-700)] text-[var(--jt-stone-50)] transition-colors duration-300 group-hover:bg-[var(--jt-olive-600)]"
+                    >
                       <Icon className="h-5 w-5" />
-                    </span>
+                    </motion.span>
                     <h3
                       className="mb-2 text-2xl font-bold text-[var(--jt-olive-900)]"
                       style={{ fontFamily: 'var(--jt-font-display)' }}
@@ -262,15 +269,21 @@ export function AboutClient() {
           ].map((line, i) => (
             <motion.div
               key={line.en}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: isAR ? 24 : -24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.6, delay: i * 0.08 }}
-              className="flex items-start gap-3 rounded-2xl border border-[var(--jt-terra-200)]/50 bg-[var(--jt-terra-50)]/40 p-4"
+              transition={{ type: 'spring', stiffness: 180, damping: 22, delay: i * 0.1 }}
+              className="flex items-start gap-3 rounded-2xl border border-[var(--jt-terra-200)]/50 bg-[var(--jt-terra-50)]/40 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--jt-terra-300)]/70 hover:shadow-[var(--jt-shadow-sm)]"
             >
-              <span className="mt-1 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--jt-terra-500)] text-[10px] font-bold text-white">
+              <motion.span
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 14, delay: i * 0.1 + 0.2 }}
+                className="mt-1 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[var(--jt-terra-500)] text-[10px] font-bold text-white"
+              >
                 ✕
-              </span>
+              </motion.span>
               <span className="text-sm text-[var(--jt-stone-800)]" style={{ fontFamily: isAR ? 'var(--jt-font-arabic)' : 'var(--jt-font-latin)', lineHeight: isAR ? 1.9 : 1.6 }}>
                 {t(line.ar, line.en)}
               </span>
