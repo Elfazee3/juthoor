@@ -3,6 +3,10 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import {
+  getCachedLoggedInUserIdOrNull,
+  getCachedLoggedInVerifiedSupabaseUser,
+} from '@/rsc-data/supabase';
 
 const BUCKET = 'verification-docs';
 const ALLOWED_EXT = /^(jpg|jpeg|png|webp|heic|pdf)$/i;
@@ -43,10 +47,9 @@ export async function getVerificationUploadTarget(input: {
 }): Promise<{ path: string; token: string }> {
   const ext = input.fileExtension.replace(/^\./, '').toLowerCase();
   if (!ALLOWED_EXT.test(ext)) throw new Error(`Unsupported file type: ${ext}`);
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) throw new Error('Not authenticated');
+  const supabase = await createJuthoorSupabaseClient();
   const path = `${uid}/${randomUUID()}.${ext}`;
   const { data, error } = await supabase.storage
     .from(BUCKET)
@@ -67,10 +70,9 @@ export async function submitVerification(
   input: z.input<typeof SubmitSchema>,
 ): Promise<IdentityVerification> {
   const parsed = SubmitSchema.parse(input);
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) throw new Error('Not authenticated');
+  const supabase = await createJuthoorSupabaseClient();
 
   const { data, error } = await supabase
     .from('identity_verifications')
@@ -91,10 +93,9 @@ export async function submitVerification(
 /** The current user's most recent verification request, or null. Degrades to
  *  null if the table has not been migrated yet. */
 export async function getMyVerification(): Promise<IdentityVerification | null> {
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) return null;
+  const supabase = await createJuthoorSupabaseClient();
   const { data, error } = await supabase
     .from('identity_verifications')
     .select(SELECT_COLS)
@@ -109,8 +110,8 @@ export async function getMyVerification(): Promise<IdentityVerification | null> 
 async function assertAdmin(
   supabase: Awaited<ReturnType<typeof createJuthoorSupabaseClient>>,
 ): Promise<string> {
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const { user } = await getCachedLoggedInVerifiedSupabaseUser();
+  const uid = user?.id;
   if (!uid) throw new Error('Not authenticated');
   const { data } = await supabase
     .from('profiles')

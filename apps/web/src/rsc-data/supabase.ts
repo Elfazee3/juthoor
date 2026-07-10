@@ -59,3 +59,11 @@ export const getCachedLoggedInUserId = cache(async () => {
   const claims = await getCachedLoggedInUserClaims();
   return claims.sub;
 });
+
+// Like getCachedLoggedInUserId but returns null for an unauthenticated visitor
+// instead of throwing — for data reads that degrade to "no user" (return null /
+// empty) rather than erroring. Uses claims (local JWT), so no network round trip.
+export const getCachedLoggedInUserIdOrNull = cache(async () => {
+  const claims = await getCachedLoggedInUserClaimsOrNull();
+  return claims?.sub ?? null;
+});

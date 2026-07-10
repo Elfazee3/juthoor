@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 
 const RoleEnum = z.enum(['read_only', 'collaborator', 'owner']); // 'owner' blocked server-side
 export type RequestedRole = z.infer<typeof RoleEnum>;
@@ -121,10 +122,9 @@ export async function getProofUploadTarget(input: {
   const ext = input.fileExtension.replace(/^\./, '').toLowerCase();
   if (!/^(jpg|jpeg|png|webp|pdf)$/.test(ext)) throw new Error('Unsupported file type');
 
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) throw new Error('Not authenticated');
+  const supabase = await createJuthoorSupabaseClient();
 
   const path = `${input.treeId}/${uid}/${randomUUID()}.${ext}`;
   const { data, error } = await supabase.storage.from('proof-of-family').createSignedUploadUrl(path);

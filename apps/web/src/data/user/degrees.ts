@@ -1,6 +1,7 @@
 'use server';
 
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 
 export type PathNode = {
   person_id: string;
@@ -21,10 +22,9 @@ export type DegreesResult = {
  * user hasn't completed the "Add yourself" onboarding.
  */
 export async function getSelfPersonId(): Promise<string | null> {
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const userId = authData.user?.id;
+  const userId = await getCachedLoggedInUserIdOrNull();
   if (!userId) return null;
+  const supabase = await createJuthoorSupabaseClient();
   const { data } = await supabase
     .from('profiles')
     .select('self_person_id')

@@ -1,6 +1,7 @@
 'use server';
 
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 import type { PlaceExternalLink } from '@/types/database';
 
 export type PlaceType = 'village' | 'city' | 'clan_locality' | 'khirba';
@@ -154,8 +155,7 @@ export type PlacePerson = {
 async function viewerWritableTreeIds(
   supabase: Awaited<ReturnType<typeof createJuthoorSupabaseClient>>,
 ): Promise<Set<string>> {
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   const writable = new Set<string>();
   if (!uid) return writable;
   const [owned, member] = await Promise.all([

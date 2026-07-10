@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInVerifiedSupabaseUser } from '@/rsc-data/supabase';
 import { listPendingVerifications } from '@/data/user/identityVerification';
 import { AdminVerificationsClient } from './AdminVerificationsClient';
 
@@ -8,10 +9,10 @@ export const metadata = {
 };
 
 async function isCurrentUserAdmin(): Promise<boolean> {
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const { user } = await getCachedLoggedInVerifiedSupabaseUser();
+  const uid = user?.id;
   if (!uid) return false;
+  const supabase = await createJuthoorSupabaseClient();
   const { data } = await supabase
     .from('profiles')
     .select('is_admin')

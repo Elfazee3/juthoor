@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 import { ATTACHMENT_LIMITS } from '@/lib/attachments/limits';
 
 export type AttachmentKind = 'photo' | 'document';
@@ -94,10 +95,9 @@ export async function getAttachmentUploadTarget(input: {
 
 export async function recordAttachment(input: z.input<typeof InsertSchema>): Promise<Attachment> {
   const parsed = InsertSchema.parse(input);
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) throw new Error('Not authenticated');
+  const supabase = await createJuthoorSupabaseClient();
 
   // Soft-cap check
   const { count } = await supabase
