@@ -17,7 +17,7 @@
 | ID | Task | Tags | Deps | Status | Notes |
 |----|------|------|------|--------|-------|
 | S0 | Bootstrap: create/checkout `feat/fix-loop-m0-m3`; first commit = the untracked planning docs (`docs/MATCHING_ENGINE_PLAN.md`, `docs/FIX_LOOP_BRIEF.md`, `docs/LOOP_STATE.md`); verify Docker + `npx supabase start` + `db reset` + seed villages; record baseline gate results (typecheck/lint/test) | — | — | DONE | Branch ✅, docs committed (d870e0c) ✅, baseline gates ✅ (see Environment status). Docker/supabase verification ✗ — daemon not ready this session (see banner); does not block Track A. |
-| A1 | Fix open redirect + silent exchange errors in `auth/callback/route.ts`; encode `next` in `Login.tsx`; unit tests (brief §7-A1) | security | S0 | TODO | |
+| A1 | Fix open redirect + silent exchange errors in `auth/callback/route.ts`; encode `next` in `Login.tsx`; unit tests (brief §7-A1) | security | S0 | DONE | New `lib/auth/safeRedirect.ts` sanitizer (rejects off-origin, `//host`, `/\`, control chars, bad encoding) wired into callback + confirm routes; callback now routes exchange failures to `/auth/auth-code-error` (no console); `Login.tsx` encodes `next`. 8 unit tests. Gates green. |
 | A2 | OTP length: accept 6–8 digits client-side, default 8, update SUPABASE_OTP_SETUP.md (brief §7-A2) | auth | S0 | TODO | |
 | A3 | Password policy min(8) + bilingual error in `security.ts` (brief §7-A3) | auth | S0 | TODO | |
 | B1 | M0: dump + commit ALL live-only DB objects into a migration; fresh `db reset` builds search/degrees end-to-end (brief §8-M0.1, plan §6 "hard dependency") | matching, db | S0 | BLOCKED(env: Docker) | Root of Track B. Needs local Supabase stack (`db reset`) to verify — Docker unavailable this session. Reset to TODO once Docker is up. |
@@ -58,6 +58,7 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 | # | Date | Task | Result | Note |
 |---|------|------|--------|------|
 | 1 | 2026-07-10 | S0 | DONE | Branch `feat/fix-loop-m0-m3` created; planning docs committed (d870e0c); baseline gates green (typecheck/lint/88 tests). Docker Desktop wouldn't reach ready after 2 launches → B1 + A8 BLOCKED(env: Docker); Track A (A1–A7) proceeds. |
+| 2 | 2026-07-10 | A1 | DONE | Open-redirect + silent-error fix. Added `lib/auth/safeRedirect.ts` (+8 vitest cases), wired into callback + confirm routes, callback→auth-code-error on failure, encoded `next` in Login.tsx. Gates: typecheck ✅ · lint 0/0 (280) ✅ · test 96 passed ✅. |
 
 ## Final summary
 

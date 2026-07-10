@@ -44,7 +44,7 @@ export function Login({
 
   function redirectToDashboard() {
     if (next) {
-      router.push(`/auth/callback?next=${next}`);
+      router.push(`/auth/callback?next=${encodeURIComponent(next)}`);
     } else {
       router.push('/dashboard');
     }
