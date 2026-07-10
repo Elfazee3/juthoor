@@ -7,10 +7,11 @@
 ## Environment status (set at S0; re-check when unblocking Track B)
 
 - **Baseline gates (pre-loop, S0, branch `feat/fix-loop-m0-m3`):** `pnpm typecheck` ✅ clean · `pnpm lint` ✅ 0 warnings / 0 errors (278 files) · `pnpm test` ✅ 88 passed (13 files). **This is the green bar every iteration must preserve.**
-- **⚠️ Docker Desktop is NOT available this session.** The daemon pipe (`dockerDesktopLinuxEngine`) never became reachable after two launches (~6 min); `com.docker.backend` starts but the Linux VM doesn't reach ready, and `docker info` hangs. In a non-interactive session the Docker Desktop first-run / tray step can't be completed from here.
-  - **Consequence:** any task needing the local Supabase stack — all `db` / `[LIVE-APPLY]` / `[E2E]` tasks — cannot be brought up or verified, so cannot be committed under the gate rules (brief §5). Track B is rooted on **B1**, now `BLOCKED`; **A8** (E2E) likewise.
-  - **To unblock Track B:** user starts **Docker Desktop** interactively (wait for the tray whale to go green), confirms `docker info` works, then re-runs `/loop`. On that run, reset **B1** and **A8** from `BLOCKED` → `TODO` (the rest of Track B is dependency-gated behind B1 and will become eligible automatically).
-  - **Track A non-E2E tasks (A1–A7) need only Node/pnpm** and proceed normally — the loop continues on them.
+- **✅ Docker Desktop came up (~50 min after launch) — local stack now available.** `docker info` → server 29.1.3. Track A (S0, A1–A7) was completed while it booted; **B1 and A8 are now unblocked (reset to TODO)** and the loop continues into Track B.
+- **✅ Live Supabase access confirmed via MCP** — project `nlufpicjdeeqcgepewdg` (juthoor), ACTIVE_HEALTHY, **Postgres 17**. `execute_sql` reads the live-only objects, so B1 can introspect and dump them (`pg_get_functiondef` / table DDL). This is read-only on live; B1 writes migration files + verifies with a local `db reset` (no live mutation).
+  - **B1 hand-off notes (verified live 2026-07-10):** live-only objects = FUNCTIONS `normalize_arabic(txt text)`, `arabic_phonetic(txt text)`, `search_master_tree(...)` — **its args use a `gender_type` enum; confirm that enum is committed/local before building** — and `compute_degrees(p_source uuid, p_target uuid)`; PLUS the `match_paths` **cache TABLE** (+ its indexes/RLS) — `match_paths` is a table, not a function. Also check `person_names` for generated phonetic columns.
+  - **⚠️ Version mismatch:** live is **Postgres 17**; local `apps/database/supabase/config.toml` is `major_version = 15`. Bump the local config to 17 (or verify the dumped objects build on 15) before the "`db reset` builds from scratch" acceptance check.
+- **Baseline green bar to preserve:** typecheck clean · lint 0/0 · 111 unit tests (was 88 at S0; Track A added 23).
 
 ## Task board (execute in table order, respecting Deps)
 
@@ -20,7 +21,7 @@
 | A1 | Fix open redirect + silent exchange errors in `auth/callback/route.ts`; encode `next` in `Login.tsx`; unit tests (brief §7-A1) | security | S0 | DONE | New `lib/auth/safeRedirect.ts` sanitizer (rejects off-origin, `//host`, `/\`, control chars, bad encoding) wired into callback + confirm routes; callback now routes exchange failures to `/auth/auth-code-error` (no console); `Login.tsx` encodes `next`. 8 unit tests. Gates green. |
 | A2 | OTP length: accept 6–8 digits client-side, default 8, update SUPABASE_OTP_SETUP.md (brief §7-A2) | auth | S0 | DONE | `otpConfig.ts` defaults to 8 + adds `OTP_MIN/MAX_LENGTH` and `isValidOtp()`; both submit gates (Signup, LoginOtpTab) now use `isValidOtp` (accepts 6–8) instead of exact-length; stale comments fixed; +5 unit tests. SUPABASE_OTP_SETUP.md advice corrected in place (NOTE: that doc is at the ancestry root, outside the juthoor repo — updated but not in the commit). Gates green (101 tests). |
 | A3 | Password policy min(8) + bilingual error in `security.ts` (brief §7-A3) | auth | S0 | DONE | New reusable `lib/auth/passwordPolicy.ts` (min 8 + bilingual AR·EN message); `security.ts` update-password schema uses it; `UpdatePassword.tsx` onError now surfaces the validation message (not just serverError). +3 unit tests. Existing logins not re-validated → no lockout. Gates green (104 tests). |
-| B1 | M0: dump + commit ALL live-only DB objects into a migration; fresh `db reset` builds search/degrees end-to-end (brief §8-M0.1, plan §6 "hard dependency") | matching, db | S0 | BLOCKED(env: Docker) | Root of Track B. Needs local Supabase stack (`db reset`) to verify — Docker unavailable this session. Reset to TODO once Docker is up. |
+| B1 | M0: dump + commit ALL live-only DB objects into a migration; fresh `db reset` builds search/degrees end-to-end (brief §8-M0.1, plan §6 "hard dependency") | matching, db | S0 | TODO | UNBLOCKED (Docker up + live MCP access confirmed). See banner B1 hand-off notes: 4 functions + `match_paths` table + `gender_type` enum + PG17-vs-local-15 config. Introspect via `mcp__supabase__execute_sql` on `nlufpicjdeeqcgepewdg`. |
 | B2 | M0: replace leaky `matches_select` with admin-only SELECT + pgTAP proving non-admin reads 0 rows (plan §5.4) | security, db, [LIVE-APPLY] | B1 | TODO | |
 | B3 | M0: degrees-path masking for living/non-permissioned nodes (SQL + `data/user/degrees.ts` + search UI) + pgTAP (plan §5.1) | security, db, [LIVE-APPLY] | B1 | TODO | |
 | B4 | M0: `app_settings` (auto_merge_enabled=false, 450, 0.78) + `matching_runs` + `person_privacy_holds` + `is_person_living()` + pgTAP (plan §7-M0) | matching, db | B1 | TODO | |
@@ -37,7 +38,7 @@
 | B11 | M2: `match_block_keys` + `match_block_skips` + 7 blocking passes + non-name anchor pass + `generate_match_candidates` with caps (plan §7-M2) | matching, db | B7 | TODO | |
 | B12 | M2: `run_matching_batch` (advisory lock, chunked, timeout-0, shadow-forced pending, never clobber human decisions) + pg_cron schedules (guarded) (plan §7-M2) | matching, db | B9, B11 | TODO | |
 | B13 | M2: eval schema + `run_eval` + baseline PR curve on fixtures; `matching_runs` counters verified (plan §7-M2 exit) | matching, db | B9, B10 | TODO | |
-| A8 | Revive Playwright: rewrite helpers (password login + Inbucket OTP), fix 4 stale specs, add redirect/gate/admin specs; suite green locally (brief §7-A8) | auth, [E2E] | A1, A2, A5 | BLOCKED(env: Docker) | E2E needs local Supabase stack (Inbucket + DB) — Docker unavailable this session. Code deps (A1/A2/A5) will complete; reset to TODO once Docker is up. |
+| A8 | Revive Playwright: rewrite helpers (password login + Inbucket OTP), fix 4 stale specs, add redirect/gate/admin specs; suite green locally (brief §7-A8) | auth, [E2E] | A1, A2, A5 | TODO | UNBLOCKED (Docker up; deps A1/A2/A5 DONE). Needs local Supabase stack (Inbucket + DB) running. |
 | B14 | M3: `match_audit`, `notifications`, `contact_relay`, `match_hints`, `match_review_cards` view (masked), `person_identity_groups` matview + unique index, `v_match_explanations` (plan §7-M3) | matching, db | B4, B9 | TODO | |
 | B15 | M3: `confirm/reject/revoke_person_link` + `resolve_match` + `resolve_match_hint` RPCs; revoke = full teardown (plan §6 RPCs) | matching, db | B14 | TODO | |
 | B16 | M3: `data/admin/review.ts` + `/admin/review` queue UI (RTL A-right, agree/disagree/missing chips, live re-derive via score_pair, living badges) using `requireAdmin` (plan §7-M3) | matching, ui | B14, B15, A5 | TODO | |
@@ -65,11 +66,11 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 | 6 | 2026-07-10 | A5 | DONE | requireAdmin extraction. New `data/admin/requireAdmin.ts` (getAdminUserId/requireAdmin/isCurrentUserAdmin, cached+server-verified); removed duplicated assertAdmin + isCurrentUserAdmin; both call sites migrated. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
 | 7 | 2026-07-10 | A6 | DONE | Dead-code + doc drift. Removed signUpAction, signInWithMagicLinkAction, getCachedLoggedInSupabaseUser, NewLogin.tsx; fixed middleware doc (proxy.ts default-deny allowlist). Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
 | 8 | 2026-07-10 | A7 | DONE | Error-message hygiene. New `lib/auth/authErrors.ts` friendlyAuthError (bilingual, generic fallback); safe-action.ts logs raw + returns friendly. +7 tests. Gates: typecheck ✅ · lint 0/0 ✅ · test 111 passed ✅. |
-| 9 | 2026-07-10 | — | LOOP PAUSED | All Docker-independent work done (S0, A1–A7). A8 + Track B (B1–B20) blocked on Docker. Loop stopped with final summary; resume by starting Docker + re-running /loop. |
+| 9 | 2026-07-10 | env | CONTINUE | Docker came up (server 29.1.3) + live Supabase MCP access confirmed (PG17, execute_sql reads live objects). B1 + A8 reset BLOCKED→TODO. Track A complete (S0, A1–A7); loop continues into Track B, B1 next. |
 
-## Final summary
+## Progress summary
 
-**Session 1 (2026-07-10) — paused on an environment blocker (Docker), not completion.**
+**Session 1 (2026-07-10) — Track A (auth) complete; Docker + live DB came up mid-session, loop continuing into Track B.**
 
 ### Shipped (branch `feat/fix-loop-m0-m3`, 8 commits, all gates green — 111 unit tests)
 - **S0** bootstrap: branch + planning docs + baseline recorded.
@@ -82,14 +83,12 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 - **A7** — **error-message hygiene**: `friendlyAuthError` bilingual mapper, no raw Supabase/DB internals reach the client. (7 tests)
 - Out-of-repo doc `SUPABASE_OTP_SETUP.md` (ancestry root) updated in place (not committed).
 
-### Blocked — needs the user
-- **Docker Desktop never reached ready** this session (non-interactive; the first-run/tray step can't be completed here). That gates **A8** (E2E) and **all of Track B (B1–B20)** — every DB/migration/pgTAP task needs the local Supabase stack.
-- **No live-DB migrations were applied** (LIVE-APPLY ledger empty) — correct, since none could be verified locally first.
+### Environment (updated mid-session)
+- **Docker Desktop is now up** (came ready ~50 min after launch) and **live Supabase MCP access is confirmed** (project `nlufpicjdeeqcgepewdg`, PG17). Both of B1's prerequisites are satisfied.
+- **No live-DB mutations have occurred** (LIVE-APPLY ledger empty). B1 is read-only on live (introspection) + local file/db-reset.
 
-### To resume (Track B — the matching engine + E2E)
-1. Start **Docker Desktop** interactively; confirm `docker info` works and `cd apps/database && npx supabase start` + `npx supabase db reset` succeed (seed per RUN_GUIDE).
-2. In `docs/LOOP_STATE.md`, reset **B1** and **A8** from `BLOCKED` → `TODO` (the rest of Track B is dependency-gated behind B1 and becomes eligible automatically).
-3. Re-run `/loop`. It resumes at B1 (dump/commit the live-only DB objects) and proceeds through M0→M3, then A8 E2E.
+### Now in progress — Track B (matching engine, M0→M3) then A8 E2E
+- Next task: **B1** — dump/commit the live-only DB objects (4 functions + `match_paths` table, mind the `gender_type` enum and the PG17-vs-local-15 config) so the schema builds from scratch. Then M0 security fixes (B2 RLS, B3 degrees masking — both `[LIVE-APPLY]`), M0 foundations (B4/B5/B6), then M1→M3.
 
-### Recommended human review now
-- Review the 8 commits on `feat/fix-loop-m0-m3` (the 7 auth fixes are self-contained and independently valuable) and push/PR when satisfied. The branch is intentionally **not pushed and not merged to main** by the loop.
+### Recommended human review any time
+- The 9 commits on `feat/fix-loop-m0-m3` so far (S0 + 7 auth fixes) are self-contained and independently valuable. The branch is intentionally **not pushed and not merged to main** by the loop — review/push/PR when satisfied.
