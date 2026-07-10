@@ -13,20 +13,6 @@ export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
   return data;
 });
 
-// Only meant to be used in protected pages
-// This doesn't verify the token with the server, it only validates the stored token
-export const getCachedLoggedInSupabaseUser = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
-  }
-  if (!data.session?.user) {
-    throw new Error('No user found');
-  }
-  return data.session.user;
-});
-
 export const getCachedLoggedInUserClaims = cache(async () => {
   const supabase = await createSupabaseClient();
   const { data, error } = await supabase.auth.getClaims();

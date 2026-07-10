@@ -209,11 +209,10 @@ export default async function DashboardPage() {
 For route-level protection before rendering, use middleware with getUser():
 
 ```typescript
+// src/proxy.ts (the Next.js 16 middleware entry) delegates to updateSession:
 // src/supabase-clients/middleware.ts
 import { createServerClient } from '@supabase/ssr';
-import { match } from 'path-to-regexp';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -239,29 +238,30 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const protectedPages = [
-    '/dashboard',
-    '/private-item',
-    '/private-items',
-    '/items',
-    '/item',
+  const pathname = request.nextUrl.pathname;
+
+  // DEFAULT-DENY allowlist: only these are public; everything else (dashboard,
+  // tree, families, villages, search, ...) is gated. This mirrors the
+  // server-side AuthGuard so visitors never see a flash of protected UI.
+  const publicExact = new Set(['/']);
+  const publicPrefixes = [
+    '/about', '/why', '/how', '/contact', '/privacy', '/terms',
+    '/login', '/sign-up', '/forgot-password', '/update-password', '/auth',
   ];
+  const isPublic =
+    publicExact.has(pathname) ||
+    publicPrefixes.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   // Use getUser() in middleware for server verification
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect if user not authenticated and accessing protected route
-  if (
-    !user &&
-    protectedPages.some((page) => {
-      const matcher = match(page);
-      return matcher(request.nextUrl.pathname);
-    })
-  ) {
+  // Unauthenticated + non-public → /login, preserving the intended path.
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
 
