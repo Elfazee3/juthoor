@@ -29,7 +29,7 @@
 | A4 | Replace 10 uncached `getUser()` sites with cached claims/verified helpers per guide; ≤1 auth round-trip per page (brief §7-A4) | auth, perf | A1 | DONE | Added `getCachedLoggedInUserIdOrNull` helper; 8 uid-only reads (degrees, attachments, places, access, personProfiles, identityVerification ×3, person-360 page) now use cached claims (0 network); 2 admin sites (assertAdmin, admin page) use cached VERIFIED helper (still server-verified, now deduped). Only middleware + the verified helper still call getUser. Person-360 render now does 0 auth round-trips. Gates green (104 tests). |
 | A5 | Extract single `requireAdmin()` helper; migrate both duplicate call sites (brief §7-A5) | auth | A4 | DONE | New `data/admin/requireAdmin.ts` (cached `getAdminUserId` + `requireAdmin` + `isCurrentUserAdmin`, server-verified). Removed local `assertAdmin` (identityVerification.ts) and `isCurrentUserAdmin` (admin page); both migrated. Admin page guard + data fetch now share one cached is_admin lookup. Ready for Track B `/admin/review`. Gates green (104 tests). |
 | A6 | Delete dead auth code (signUpAction, magic-link action, NewLogin.tsx, getSession helper); fix middleware doc drift (brief §7-A6) | cleanup | A4 | DONE | Verified all 4 symbols unused (grep), then removed: `signUpAction` + `signInWithMagicLinkAction` (auth.ts), `getCachedLoggedInSupabaseUser` (rsc-data), `NewLogin.tsx` (git rm). Fixed SUPABASE_GETCLAIMS doc middleware section → real proxy.ts default-deny allowlist (was stale protectedPages/path-to-regexp). Gates green (104 tests). |
-| A7 | Sanitize server-action error messages (bilingual mapper, no raw Supabase internals) (brief §7-A7) | auth | A1 | TODO | |
+| A7 | Sanitize server-action error messages (bilingual mapper, no raw Supabase internals) (brief §7-A7) | auth | A1 | DONE | New `lib/auth/authErrors.ts` `friendlyAuthError()` maps known auth failures (OTP, credentials, rate-limit, duplicate, auth-required, weak-pw) to bilingual messages; unknown → generic (no leak). `safe-action.ts` logs raw error server-side, returns friendly message. Wrong-OTP UX preserved. +7 unit tests. Gates green (111 tests). |
 | B7 | M1: `match_features` + `match_features_dirty` (deny-all RLS) + derivation triggers on all six source tables; dirty queue = sole probe source (plan §6/§7-M1) | matching, db | B1, B4 | TODO | |
 | B8 | M1: `transliterate_to_arabic` ported from `lib/search/phonetic.ts` + `name_variants` seed (plan §6) | matching, db | B1 | TODO | |
 | B9 | M1: helpers (`name_score`, `year_band_pts`, `cluster_gate`) + authoritative `score_pair` with collapse/cluster-gate/disagreement-vetoes/score_pct + PII-minimized breakdown (plan §4) | matching, db | B7, B8 | TODO | |
@@ -64,7 +64,32 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 | 5 | 2026-07-10 | A4 | DONE | getUser() caching. New `getCachedLoggedInUserIdOrNull`; 8 uid reads → cached claims (0 network), 2 admin → cached verified helper. Only middleware + verified helper still hit getUser. Person-360 render: 0 auth round-trips. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
 | 6 | 2026-07-10 | A5 | DONE | requireAdmin extraction. New `data/admin/requireAdmin.ts` (getAdminUserId/requireAdmin/isCurrentUserAdmin, cached+server-verified); removed duplicated assertAdmin + isCurrentUserAdmin; both call sites migrated. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
 | 7 | 2026-07-10 | A6 | DONE | Dead-code + doc drift. Removed signUpAction, signInWithMagicLinkAction, getCachedLoggedInSupabaseUser, NewLogin.tsx; fixed middleware doc (proxy.ts default-deny allowlist). Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
+| 8 | 2026-07-10 | A7 | DONE | Error-message hygiene. New `lib/auth/authErrors.ts` friendlyAuthError (bilingual, generic fallback); safe-action.ts logs raw + returns friendly. +7 tests. Gates: typecheck ✅ · lint 0/0 ✅ · test 111 passed ✅. |
+| 9 | 2026-07-10 | — | LOOP PAUSED | All Docker-independent work done (S0, A1–A7). A8 + Track B (B1–B20) blocked on Docker. Loop stopped with final summary; resume by starting Docker + re-running /loop. |
 
 ## Final summary
 
-_(written by the loop when every task is DONE or BLOCKED)_
+**Session 1 (2026-07-10) — paused on an environment blocker (Docker), not completion.**
+
+### Shipped (branch `feat/fix-loop-m0-m3`, 8 commits, all gates green — 111 unit tests)
+- **S0** bootstrap: branch + planning docs + baseline recorded.
+- **A1** — closed the unauthenticated **open redirect** in the OAuth callback (+ silent-error swallow); shared `sanitizeNextPath` guards both auth routes; `next` encoded in Login. (8 tests)
+- **A2** — fixed the **OTP lockout**: client accepts any 6–8 digit code, default length 8. (5 tests)
+- **A3** — password policy **min(4)→min(8)** with a bilingual error. (3 tests)
+- **A4** — removed **10 uncached `getUser()`** round-trips; person-360 render now does 0 auth round-trips; admin/password stay server-verified.
+- **A5** — single **`requireAdmin()`** helper (`data/admin/requireAdmin.ts`); both duplicate admin checks migrated.
+- **A6** — deleted **~250 lines of dead auth code** (2 actions, `NewLogin.tsx`, a stale cached helper) + fixed the middleware doc drift.
+- **A7** — **error-message hygiene**: `friendlyAuthError` bilingual mapper, no raw Supabase/DB internals reach the client. (7 tests)
+- Out-of-repo doc `SUPABASE_OTP_SETUP.md` (ancestry root) updated in place (not committed).
+
+### Blocked — needs the user
+- **Docker Desktop never reached ready** this session (non-interactive; the first-run/tray step can't be completed here). That gates **A8** (E2E) and **all of Track B (B1–B20)** — every DB/migration/pgTAP task needs the local Supabase stack.
+- **No live-DB migrations were applied** (LIVE-APPLY ledger empty) — correct, since none could be verified locally first.
+
+### To resume (Track B — the matching engine + E2E)
+1. Start **Docker Desktop** interactively; confirm `docker info` works and `cd apps/database && npx supabase start` + `npx supabase db reset` succeed (seed per RUN_GUIDE).
+2. In `docs/LOOP_STATE.md`, reset **B1** and **A8** from `BLOCKED` → `TODO` (the rest of Track B is dependency-gated behind B1 and becomes eligible automatically).
+3. Re-run `/loop`. It resumes at B1 (dump/commit the live-only DB objects) and proceeds through M0→M3, then A8 E2E.
+
+### Recommended human review now
+- Review the 8 commits on `feat/fix-loop-m0-m3` (the 7 auth fixes are self-contained and independently valuable) and push/PR when satisfied. The branch is intentionally **not pushed and not merged to main** by the loop.
