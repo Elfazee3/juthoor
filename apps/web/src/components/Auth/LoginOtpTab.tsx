@@ -11,11 +11,11 @@ import { Label } from '@/components/ui/label';
 import { OtpCodeInput } from '@/components/Auth/OtpCodeInput';
 import { useLocale } from '@/contexts/LocaleContext';
 import { requestEmailOtpAction, verifyEmailOtpAction } from '@/data/auth/auth';
-import { OTP_LENGTH } from '@/lib/auth/otpConfig';
+import { OTP_LENGTH, isValidOtp } from '@/lib/auth/otpConfig';
 
 /**
- * Inline OTP login flow for the /login Tabs panel. Sends a 6-digit code on
- * submit, then verifies. Replaces the magic-link tab.
+ * Inline OTP login flow for the /login Tabs panel. Sends a 6–8 digit code
+ * (length per env) on submit, then verifies. Replaces the magic-link tab.
  */
 export function LoginOtpTab({ next }: { next?: string }) {
   const { t, dir } = useLocale();
@@ -128,7 +128,7 @@ export function LoginOtpTab({ next }: { next?: string }) {
             <Button
               type="button"
               onClick={() => verify(code)}
-              disabled={busy || code.length !== OTP_LENGTH}
+              disabled={busy || !isValidOtp(code)}
               className="w-full bg-[var(--jt-olive-700)] hover:bg-[var(--jt-olive-800)]"
             >
               {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="me-2 h-4 w-4" />}
