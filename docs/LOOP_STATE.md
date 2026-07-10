@@ -27,7 +27,7 @@
 | B5 | M0: CI — remove upstream guard from integration-tests.yml only; add pgTAP job; wire `test-db` into turbo (plan §7-M0) | ci | B1 | TODO | |
 | B6 | M0: mask living-person birth-year/origin in public-tree search results (plan §5.5) | security | B1 | TODO | |
 | A4 | Replace 10 uncached `getUser()` sites with cached claims/verified helpers per guide; ≤1 auth round-trip per page (brief §7-A4) | auth, perf | A1 | DONE | Added `getCachedLoggedInUserIdOrNull` helper; 8 uid-only reads (degrees, attachments, places, access, personProfiles, identityVerification ×3, person-360 page) now use cached claims (0 network); 2 admin sites (assertAdmin, admin page) use cached VERIFIED helper (still server-verified, now deduped). Only middleware + the verified helper still call getUser. Person-360 render now does 0 auth round-trips. Gates green (104 tests). |
-| A5 | Extract single `requireAdmin()` helper; migrate both duplicate call sites (brief §7-A5) | auth | A4 | TODO | |
+| A5 | Extract single `requireAdmin()` helper; migrate both duplicate call sites (brief §7-A5) | auth | A4 | DONE | New `data/admin/requireAdmin.ts` (cached `getAdminUserId` + `requireAdmin` + `isCurrentUserAdmin`, server-verified). Removed local `assertAdmin` (identityVerification.ts) and `isCurrentUserAdmin` (admin page); both migrated. Admin page guard + data fetch now share one cached is_admin lookup. Ready for Track B `/admin/review`. Gates green (104 tests). |
 | A6 | Delete dead auth code (signUpAction, magic-link action, NewLogin.tsx, getSession helper); fix middleware doc drift (brief §7-A6) | cleanup | A4 | TODO | |
 | A7 | Sanitize server-action error messages (bilingual mapper, no raw Supabase internals) (brief §7-A7) | auth | A1 | TODO | |
 | B7 | M1: `match_features` + `match_features_dirty` (deny-all RLS) + derivation triggers on all six source tables; dirty queue = sole probe source (plan §6/§7-M1) | matching, db | B1, B4 | TODO | |
@@ -62,6 +62,7 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 | 3 | 2026-07-10 | A2 | DONE | OTP length fragility. `otpConfig.ts` default 8 + `isValidOtp()`; Signup + LoginOtpTab gates accept 6–8 digits; setup-doc advice corrected (out-of-repo, not committed). Gates: typecheck ✅ · lint 0/0 ✅ · test 101 passed ✅. |
 | 4 | 2026-07-10 | A3 | DONE | Password policy. New `lib/auth/passwordPolicy.ts` (min 8, bilingual msg); `security.ts` uses it; `UpdatePassword.tsx` surfaces validation message. +3 tests. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 passed ✅. |
 | 5 | 2026-07-10 | A4 | DONE | getUser() caching. New `getCachedLoggedInUserIdOrNull`; 8 uid reads → cached claims (0 network), 2 admin → cached verified helper. Only middleware + verified helper still hit getUser. Person-360 render: 0 auth round-trips. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
+| 6 | 2026-07-10 | A5 | DONE | requireAdmin extraction. New `data/admin/requireAdmin.ts` (getAdminUserId/requireAdmin/isCurrentUserAdmin, cached+server-verified); removed duplicated assertAdmin + isCurrentUserAdmin; both call sites migrated. Gates: typecheck ✅ · lint 0/0 ✅ · test 104 ✅. |
 
 ## Final summary
 
