@@ -30,7 +30,7 @@
 | A2 | OTP length: accept 6–8 digits client-side, default 8, update SUPABASE_OTP_SETUP.md (brief §7-A2) | auth | S0 | DONE | `otpConfig.ts` defaults to 8 + adds `OTP_MIN/MAX_LENGTH` and `isValidOtp()`; both submit gates (Signup, LoginOtpTab) now use `isValidOtp` (accepts 6–8) instead of exact-length; stale comments fixed; +5 unit tests. SUPABASE_OTP_SETUP.md advice corrected in place (NOTE: that doc is at the ancestry root, outside the juthoor repo — updated but not in the commit). Gates green (101 tests). |
 | A3 | Password policy min(8) + bilingual error in `security.ts` (brief §7-A3) | auth | S0 | DONE | New reusable `lib/auth/passwordPolicy.ts` (min 8 + bilingual AR·EN message); `security.ts` update-password schema uses it; `UpdatePassword.tsx` onError now surfaces the validation message (not just serverError). +3 unit tests. Existing logins not re-validated → no lockout. Gates green (104 tests). |
 | B1 | M0: dump + commit ALL live-only DB objects into a migration; fresh `db reset` builds search/degrees end-to-end (brief §8-M0.1, plan §6 "hard dependency") | matching, db | S0 | DONE | ✅ VERIFIED 2026-07-11: `npx supabase db reset` builds all 27 migrations from scratch (exit 0, only idempotent DROP-IF-EXISTS notices). Confirmed in fresh local DB: 4 functions (normalize_arabic, arabic_phonetic, search_master_tree, compute_degrees), `match_paths` table, person_names generated cols (given/surname _norm/_phonetic) all present; `search_master_tree(...)` executes; `seed_villages.sql` → 456 places; trigram village search works (اللد→1 hit). Built on local PG15 (no config bump needed despite live PG17). Migrations committed in 2fb767a. |
-| B2 | M0: replace leaky `matches_select` with admin-only SELECT + pgTAP proving non-admin reads 0 rows (plan §5.4) | security, db, [LIVE-APPLY] | B1 | TODO | |
+| B2 | M0: replace leaky `matches_select` with admin-only SELECT + pgTAP proving non-admin reads 0 rows (plan §5.4) | security, db, [LIVE-APPLY] | B1 | DONE (LIVE-APPLY PENDING) | Migration `20260711000000_matches_rls_admin_only.sql` drops leaky policy → `matches_select_admin_only USING is_admin()`. pgTAP `tests/matches_rls_test.sql` (4 assertions) proves non-admin public-tree owner reads 0 rows, admin reads 1. Local `db reset` + `supabase test db` green (46/46). NOT applied to live (local-only mode) — see ledger. |
 | B3 | M0: degrees-path masking for living/non-permissioned nodes (SQL + `data/user/degrees.ts` + search UI) + pgTAP (plan §5.1) | security, db, [LIVE-APPLY] | B1 | TODO | |
 | B4 | M0: `app_settings` (auto_merge_enabled=false, 450, 0.78) + `matching_runs` + `person_privacy_holds` + `is_person_living()` + pgTAP (plan §7-M0) | matching, db | B1 | TODO | |
 | B5 | M0: CI — remove upstream guard from integration-tests.yml only; add pgTAP job; wire `test-db` into turbo (plan §7-M0) | ci | B1 | TODO | |
@@ -61,6 +61,9 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 
 | Migration | Applied | Advisors |
 |---|---|---|
+| `20260711000000_matches_rls_admin_only.sql` (B2) | ⏳ PENDING — user must apply | run `get_advisors(security)` after apply |
+
+**How to apply the pending migrations to live (`nlufpicjdeeqcgepewdg`):** either (a) tell the loop "auto-apply is fine" and it will run `mcp__supabase__apply_migration` for each, then `get_advisors(security)`; or (b) paste each migration file's SQL into the Supabase dashboard SQL editor; or (c) `supabase link --project-ref nlufpicjdeeqcgepewdg && supabase db push`. All pending migrations are byte-for-byte the committed files under `apps/database/supabase/migrations/`.
 
 ## Iteration log
 
@@ -77,6 +80,7 @@ _Migrations applied to the live project (ref `nlufpicjdeeqcgepewdg`) get a row h
 | 9 | 2026-07-10 | env | CONTINUE | Docker came up (server 29.1.3) + live Supabase MCP access confirmed (PG17, execute_sql reads live objects). B1 + A8 reset BLOCKED→TODO. Track A complete (S0, A1–A7); loop continues into Track B, B1 next. |
 | 10 | 2026-07-11 | B1 | DUMP DONE (verify pending) | Background subagent wrote 13/16 migration files before a session restart stopped it; recovered the 3 missing search_master_tree migrations (byte-exact vs live) this session. All 16 committed. `db reset` verification blocked: Docker down post-restart, relaunched & booting. |
 | 11 | 2026-07-11 | B1 | DONE ✅ | Docker came up (user cleared the blocking dialog). `db reset` builds all 27 migrations from scratch (exit 0); 4 fns + match_paths + generated cols verified in fresh DB; 456 villages seeded; trigram search works. B1 acceptance MET. Next: B2 (M0 security, `[LIVE-APPLY]`). |
+| 12 | 2026-07-11 | B2 | DONE (LIVE-APPLY PENDING) | matches RLS leak fix + pgTAP (46/46 green locally). Local-only mode → migration committed, NOT applied to live; ledger records the pending apply. Next: B3 (degrees masking, also `[LIVE-APPLY]`). |
 
 ## Progress summary
 
