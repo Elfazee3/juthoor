@@ -1,0 +1,68 @@
+-- pgTAP: score_pair core — collapse, banding, hard vetoes, no spurious credit (plan §4).
+BEGIN;
+SELECT plan(7);
+
+INSERT INTO auth.users (id, email, aud, role) VALUES
+  ('a1111111-0000-0000-0000-000000000001', 'o1@test.juthoor', 'authenticated', 'authenticated'),
+  ('a2222222-0000-0000-0000-000000000002', 'o2@test.juthoor', 'authenticated', 'authenticated');
+INSERT INTO public.trees (id, name, owner_id) VALUES
+  ('b1111111-0000-0000-0000-000000000001', 'T1', 'a1111111-0000-0000-0000-000000000001'),
+  ('b2222222-0000-0000-0000-000000000002', 'T2', 'a2222222-0000-0000-0000-000000000002');
+INSERT INTO public.persons (id, tree_id, gender) VALUES
+  ('c0000000-0000-0000-0000-000000000001', 'b1111111-0000-0000-0000-000000000001', 'M'),  -- p1
+  ('c0000000-0000-0000-0000-000000000002', 'b2222222-0000-0000-0000-000000000002', 'M'),  -- p2 (duplicate of p1, other tree)
+  ('c0000000-0000-0000-0000-000000000003', 'b1111111-0000-0000-0000-000000000001', 'M'),  -- p3 (same tree as p1)
+  ('c0000000-0000-0000-0000-000000000004', 'b2222222-0000-0000-0000-000000000002', 'F');  -- p4 (living, F)
+
+INSERT INTO public.match_features (person_id, tree_id, gender, is_living,
+  given_norm, given_phon, surname_norm, surname_phon, father_norm, father_phon, birth_year) VALUES
+  ('c0000000-0000-0000-0000-000000000001', 'b1111111-0000-0000-0000-000000000001', 'M', false,
+   public.normalize_arabic('احمد'), public.arabic_phonetic('احمد'),
+   public.normalize_arabic('خطيب'), public.arabic_phonetic('خطيب'),
+   public.normalize_arabic('محمد'), public.arabic_phonetic('محمد'), 1950),
+  ('c0000000-0000-0000-0000-000000000002', 'b2222222-0000-0000-0000-000000000002', 'M', false,
+   public.normalize_arabic('احمد'), public.arabic_phonetic('احمد'),
+   public.normalize_arabic('خطيب'), public.arabic_phonetic('خطيب'),
+   public.normalize_arabic('محمد'), public.arabic_phonetic('محمد'), 1950),
+  ('c0000000-0000-0000-0000-000000000003', 'b1111111-0000-0000-0000-000000000001', 'M', false,
+   public.normalize_arabic('احمد'), public.arabic_phonetic('احمد'), NULL, NULL, NULL, NULL, NULL),
+  ('c0000000-0000-0000-0000-000000000004', 'b2222222-0000-0000-0000-000000000002', 'F', true,
+   public.normalize_arabic('احمد'), public.arabic_phonetic('احمد'), NULL, NULL, NULL, NULL, NULL);
+
+-- 1. a true duplicate scores high
+SELECT cmp_ok((SELECT score FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002')),
+  '>=', 50, 'duplicate pair scores >= 50');
+
+-- 2. literal+phonetic collapse: exact given = max(10,10)+2 = 12, NOT 20
+SELECT is((SELECT (breakdown->'params'->'given'->>'pts')::int FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002')),
+  12, 'given collapse = 12 (not literal+phonetic sum of 20)');
+
+-- 3. exact birth year = 25
+SELECT is((SELECT (breakdown->'params'->'birth_year'->>'pts')::int FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002')),
+  25, 'exact birth year = 25');
+
+-- 4. same-tree hard veto
+SELECT ok((SELECT breakdown->'meta'->'vetoes' FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000003')) @> '["same_tree"]',
+  'same-tree pair is vetoed');
+
+-- 5. gender mismatch hard veto
+SELECT ok((SELECT breakdown->'meta'->'vetoes' FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000004')) @> '["gender_mismatch"]',
+  'gender mismatch is vetoed');
+
+-- 6. living person → suppression flag
+SELECT is((SELECT breakdown->'meta'->>'privacy' FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000004')),
+  'living_suppressed', 'a living person is flagged living_suppressed');
+
+-- 7. no spurious credit: a NULL field scores 0
+SELECT is((SELECT (breakdown->'params'->'surname'->>'pts')::int FROM public.score_pair(
+    'c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000003')),
+  0, 'NULL surname → 0 points (no spurious positive)');
+
+SELECT finish();
+ROLLBACK;
