@@ -36,7 +36,6 @@ const FALLBACK_LATIN_TO_ARABIC: Array<[RegExp, string]> = [
   [/mohammad|mohammed|muhammad|muhammed/gi, 'محمد'],
   [/yousef|youssef|yusuf|yusef|joseph/gi, 'يوسف'],
   [/omar|umar/gi, 'عمر'],
-  [/ali/gi, 'علي'],
   [/hassan|hasan/gi, 'حسن'],
   [/khaled|khalid/gi, 'خالد'],
   [/fatima|fatma|fatema/gi, 'فاطمة'],
@@ -46,6 +45,10 @@ const FALLBACK_LATIN_TO_ARABIC: Array<[RegExp, string]> = [
   [/al-hajj|alhajj|hajj/gi, 'الحاج'],
   [/al-masri|almasri|masri/gi, 'المصري'],
   [/khalil/gi, 'خليل'],
+  // 'ali' is a substring of longer names (e.g. Khalil = kh-ali-l), so it MUST
+  // come last — longer names transliterate first. Keeps parity with the SQL
+  // transliterate_to_arabic rule order.
+  [/ali/gi, 'علي'],
 ];
 
 function fallbackTransliterate(input: string): string | null {
