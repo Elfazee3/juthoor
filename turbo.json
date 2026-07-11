@@ -31,6 +31,9 @@
     "database#status": {},
     "test:e2e": {
       "cache": false
+    },
+    "test-db": {
+      "cache": false
     }
   },
   "envMode": "loose"
