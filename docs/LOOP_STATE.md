@@ -4,6 +4,14 @@
 > `TODO` · `IN_PROGRESS` · `DONE` · `DONE (LIVE-APPLY PENDING)` · `BLOCKED(reason)`.
 > Protocol + acceptance criteria: `docs/FIX_LOOP_BRIEF.md`. Track B detail: `docs/MATCHING_ENGINE_PLAN.md`.
 
+## ⚙️ OPERATING MODE (set 2026-07-11 — every iteration must honor this)
+
+**LOCAL-ONLY / no autonomous production writes.** The user was asked how to handle `[LIVE-APPLY]` tasks and did not confirm autonomous apply, so the loop runs in the safest brief-sanctioned mode (§2.2 fallback):
+- Do ALL local work for every task (write migration, `db reset`, pgTAP/tests, commit).
+- For `[LIVE-APPLY]` tasks (B2, B3, and any future ones): **do NOT apply to the live DB.** Finish + locally verify + commit the migration, mark the task **`DONE (LIVE-APPLY PENDING)`**, and record the exact apply command in the Live-apply ledger for the user to run.
+- Never run `apply_migration` / `db push` against `nlufpicjdeeqcgepewdg`. MCP `execute_sql` read-only introspection is still fine.
+- If the user later says "auto-apply is fine," switch to brief §2.2 full mode and drain the pending live-applies.
+
 ## Environment status (set at S0; re-check when unblocking Track B)
 
 - **Baseline gates (pre-loop, S0, branch `feat/fix-loop-m0-m3`):** `pnpm typecheck` ✅ clean · `pnpm lint` ✅ 0 warnings / 0 errors (278 files) · `pnpm test` ✅ 88 passed (13 files). **This is the green bar every iteration must preserve.**
