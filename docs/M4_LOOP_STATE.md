@@ -33,7 +33,7 @@ Additive DDL / CREATE OR REPLACE / grants only. **Never flip
 | ID | Task | Tags | Deps | Status | Notes |
 |----|------|------|------|--------|-------|
 | F0 | Bootstrap: branch `feat/m4-followups` off up-to-date `main`; commit these two loop docs; record baseline gates + stack + MCP access (brief §6-F0) | — | — | DONE | Branch off `main@c79a43d` ✅ · docs committed (`d37bf9f`) ✅ · all baseline gates green (see Environment status) ✅ · MCP live access confirmed (PG 17.6, 22 migrations) ✅. |
-| F1 | Apply the 12 remaining feature-schema migrations to live, in timestamp order, with pre/post verification + advisors + ledger (brief §6-F1) | db, [LIVE-APPLY] | F0 | TODO | |
+| F1 | Apply the 12 remaining feature-schema migrations to live, in timestamp order, with pre/post verification + advisors + ledger (brief §6-F1) | db, [LIVE-APPLY] | F0 | DONE (LIVE-APPLIED) | **★ THE FULL ENGINE IS ON LIVE ★** All 12 applied in order (ledger). Pre-checks: no object pre-existed; compute_degrees/search signatures matched; pg_trgm present. Post: 17/17 tables, matview+unique idx, 2 views, 12/12 fns, **shadow row auto_merge=false thr=450**, authenticated grants present on user tables (live default-privs DO grant — CI issue was CI-only), 4 smoke tests ✅. Advisors surfaced engine-wide anon/PUBLIC executability → **+1 hardening migration `20260712010000_engine_functions_lockdown`** (local file + live p1/p2): PUBLIC+anon+authenticated revoked on engine internals (service_role re-granted), authenticated-only on user RPCs, matview + views de-anon'd. Final scan: 0 engine leaks; 2 DEFINER-view ERRORs accepted-by-design. Local reset+pgTAP 183/183 with the new file. |
 | F2 | `profiles.self_person_id` drift: introspect live → guarded local migration (no-op where column exists) + types check; NOT applied to live (brief §6-F2) | db, drift | F0 | TODO | |
 | F3 | Explicit table GRANTs migration (schema privilege-self-contained; per-table by actual RLS policy targets; deny-all engine tables get none) + live apply (brief §6-F3) | db, ci, [LIVE-APPLY] | F1 | TODO | |
 | F4 | Guarded pg_cron schedules (features_nightly / nightly_match / weekly_full / weekly_eval) + `/api/cron/run-matching` fire-and-forget fallback route (no secrets committed) (brief §6-F4) | db, ops, [LIVE-APPLY] | F1 | TODO | |
@@ -51,10 +51,25 @@ guidance pattern from that ledger for anything added here._
 
 | Migration | Live version | Verified | Advisors |
 |---|---|---|---|
-| _none yet_ | | | |
+| `20260711020000_matching_m0_foundations` | `20260712023619` | app_settings single row `auto_merge=false thr=450` ✅ | see F1 summary row |
+| `20260711040000_match_features_layer` | `20260712023656` | table + dirty queue + 6 triggers ✅ | |
+| `20260711050000_transliterate_and_name_variants` | `20260712023731` | `transliterate('Ibrahim')`→`ابراهيم` ✅ | |
+| `20260711060000_refresh_match_features` | `20260712023812` | fns present ✅ | |
+| `20260711070000_score_pair` | `20260712023853` | | |
+| `20260711080000_score_pair_gate` | `20260712023945` | `score_pair(∅,∅)`→`missing_features` contract ✅ | |
+| `20260711090000_blocking` | `20260712024014` | | |
+| `20260711100000_run_matching_batch` | `20260712024047` | service_role-only after lockdown ✅ | |
+| `20260711110000_eval_harness` | `20260712024115` | `run_eval('frs-v1-live-smoke')` returns id ✅ | |
+| `20260711120000_m3_review_surfaces` | `20260712024255` | matview+unique idx, 2 views, review-cards queryable ✅ | |
+| `20260711130000_m3_link_rpcs` | `20260712024414` | RPCs present; authenticated-only after lockdown ✅ | |
+| `20260711140000_compute_degrees_same_as_hop` | `20260712024451` | signature matched; DEFINER+guard ✅ | |
+| `20260712010000_engine_functions_lockdown` (one local file) | p1 `20260712024743` + p2 `20260712025011` | anon: NOTHING exec ✅ · authenticated: only user RPCs (score_pair/resolve_match/resolve_match_hint/confirm/reject/revoke_person_link/compute_degrees) ✅ · engine internals service_role-only ✅ · person_identity_groups no client role ✅. **Gotcha:** Postgres grants fn EXECUTE to PUBLIC by default — revoking a role does nothing while PUBLIC carries it; p2 revokes PUBLIC + re-grants explicitly | **F1 advisors summary:** 0 engine leaks. Remaining: 2 ERROR `security_definer_view` (match_review_cards, v_match_explanations) — **ACCEPTED BY DESIGN** (admin-only matches RLS mandates DEFINER; internal auth.uid() filter pgTAP-proven); 7 INFO `rls_enabled_no_policy` = the deny-all engine tables (the design); pre-existing WARNs unchanged (update_updated_at search_path, unaccent-in-public, by-design tree-access RPC grants, leaked-password toggle) |
+
+**`db push` reconciliation (if ever used):** repair `--status applied` for `20260711020000 20260711040000 20260711050000 20260711060000 20260711070000 20260711080000 20260711090000 20260711100000 20260711110000 20260711120000 20260711130000 20260711140000 20260712010000` and `--status reverted` for the MCP stamps `20260712023619…20260712025011` above (plus the phase-1 stamps listed in LOOP_STATE.md's ledger).
 
 ## Iteration log
 
 | # | Date | Task | Result | Note |
 |---|------|------|--------|------|
 | 1 | 2026-07-12 | F0 | DONE | Bootstrap: branch `feat/m4-followups` @ main c79a43d, loop docs committed (d37bf9f), baseline green (typecheck 0 · lint 0/0 · 131 unit · pgTAP 183/183 on fresh reset), Docker+stack up, MCP live access OK (PG 17.6, 22 migrations; 1 transient fetch-fail → retry worked). Next: F1 — apply the 12 feature-schema migrations to live, in timestamp order. |
+| 2 | 2026-07-12 | F1 | DONE (LIVE-APPLIED) | **★ FULL ENGINE ON LIVE (12 migrations + lockdown hardening) ★** Pre-checked, applied in order, verified (17 tables/matview/views/12 fns/shadow-mode row/4 smokes), advisors → engine-wide PUBLIC-grant leak found & fixed (`engine_functions_lockdown` p1+p2: PUBLIC-default gotcha), final scan 0 engine leaks (2 DEFINER-view ERRORs accepted-by-design, documented). Local 183/183 with the new file. Live now at 35+2 migrations. Next: F2 (self_person_id drift). |
