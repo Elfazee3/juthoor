@@ -15,18 +15,24 @@ green FIRST → `mcp__supabase__apply_migration` → live catalog+smoke verifica
 Additive DDL / CREATE OR REPLACE / grants only. **Never flip
 `app_settings.auto_merge_enabled`. Never merge the PR.**
 
-## Environment status (fill at F0)
+## Environment status (recorded at F0, 2026-07-12)
 
-- Baseline gates: _record at F0_ (expected: typecheck 0 · lint 0/0 · 131 unit ·
-  pgTAP 183 · E2E 15 passed/2 skipped).
-- Docker/local stack: _record at F0_.
-- MCP live access (`nlufpicjdeeqcgepewdg`): _record at F0_.
+- **Baseline gates ✅ (fresh run):** typecheck 0 errors · lint 0/0 · 131 unit ·
+  `db reset` exit 0 (all 44 migrations) · pgTAP **183/183 PASS**. E2E baseline
+  15 passed / 2 skipped (green earlier tonight on the identical tree at PR #2
+  merge; not re-run at F0 — first re-run happens at F6/F7).
+- **Docker/local stack ✅** — `docker info` ok, supabase local running.
+- **MCP live access ✅** — `nlufpicjdeeqcgepewdg`, PG **17.6**, 22 applied
+  migrations (18 original + the 4 security applies from 2026-07-12). Note: one
+  transient `fetch failed` on the first MCP call — retry once before treating MCP
+  as down.
+- Branch `feat/m4-followups` created off `main@c79a43d` (0 behind origin).
 
 ## Task board (execute in table order, respecting Deps)
 
 | ID | Task | Tags | Deps | Status | Notes |
 |----|------|------|------|--------|-------|
-| F0 | Bootstrap: branch `feat/m4-followups` off up-to-date `main`; commit these two loop docs; record baseline gates + stack + MCP access (brief §6-F0) | — | — | TODO | |
+| F0 | Bootstrap: branch `feat/m4-followups` off up-to-date `main`; commit these two loop docs; record baseline gates + stack + MCP access (brief §6-F0) | — | — | DONE | Branch off `main@c79a43d` ✅ · docs committed (`d37bf9f`) ✅ · all baseline gates green (see Environment status) ✅ · MCP live access confirmed (PG 17.6, 22 migrations) ✅. |
 | F1 | Apply the 12 remaining feature-schema migrations to live, in timestamp order, with pre/post verification + advisors + ledger (brief §6-F1) | db, [LIVE-APPLY] | F0 | TODO | |
 | F2 | `profiles.self_person_id` drift: introspect live → guarded local migration (no-op where column exists) + types check; NOT applied to live (brief §6-F2) | db, drift | F0 | TODO | |
 | F3 | Explicit table GRANTs migration (schema privilege-self-contained; per-table by actual RLS policy targets; deny-all engine tables get none) + live apply (brief §6-F3) | db, ci, [LIVE-APPLY] | F1 | TODO | |
@@ -51,4 +57,4 @@ guidance pattern from that ledger for anything added here._
 
 | # | Date | Task | Result | Note |
 |---|------|------|--------|------|
-| _none yet_ | | | | |
+| 1 | 2026-07-12 | F0 | DONE | Bootstrap: branch `feat/m4-followups` @ main c79a43d, loop docs committed (d37bf9f), baseline green (typecheck 0 · lint 0/0 · 131 unit · pgTAP 183/183 on fresh reset), Docker+stack up, MCP live access OK (PG 17.6, 22 migrations; 1 transient fetch-fail → retry worked). Next: F1 — apply the 12 feature-schema migrations to live, in timestamp order. |
