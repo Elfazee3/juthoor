@@ -16,7 +16,9 @@ import type { Database } from '@/types/database';
  * response returns 202 immediately and the batch runs post-response via
  * `after()` within this function's bounded lifetime. 501 when unconfigured.
  */
-export const dynamic = 'force-dynamic';
+// NOTE: no `export const dynamic` — route-segment config is incompatible with
+// nextConfig.cacheComponents, and handlers that read request headers are
+// dynamic by default under it anyway.
 export const maxDuration = 60;
 
 function unauthorized(): NextResponse {
