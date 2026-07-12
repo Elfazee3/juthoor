@@ -100,6 +100,22 @@ const config: PlaywrightTestConfig = {
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'admin-setup',
+      testMatch: '_setups/admin.setup.ts',
+    },
+    {
+      name: 'admin-users',
+      testMatch: 'admin/**/*.spec.ts',
+      retries: 1,
+      dependencies: ['admin-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        // wider viewport so the (RTL) sidebar doesn't overlap the review card actions
+        viewport: { width: 1600, height: 1000 },
+        storageState: 'playwright/.auth/admin.json',
+      },
+    },
   ],
   globalSetup: './playwright/global-setup.ts',
 };

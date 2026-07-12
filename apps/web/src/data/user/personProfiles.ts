@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 
 export type PersonProfile = {
   person_id: string;
@@ -49,10 +50,9 @@ export async function savePersonProfile(
   input: z.input<typeof SaveSchema>,
 ): Promise<PersonProfile> {
   const parsed = SaveSchema.parse(input);
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) throw new Error('Not authenticated');
+  const supabase = await createJuthoorSupabaseClient();
 
   const { data, error } = await supabase
     .from('person_profiles')

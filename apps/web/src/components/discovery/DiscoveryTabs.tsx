@@ -14,11 +14,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { FileText, Image as ImageIcon, MapPin, User, Users } from 'lucide-react';
+import { FileText, Image as ImageIcon, Link2, MapPin, User, Users } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 
 type Dimension = {
-  key: 'individual' | 'family' | 'place' | 'pictures' | 'documents';
+  key: 'individual' | 'family' | 'place' | 'pictures' | 'documents' | 'connections';
   href: string;
   matchPrefix: string[];
   icon: React.ComponentType<{ className?: string }>;
@@ -79,6 +79,16 @@ const DIMENSIONS: Dimension[] = [
     hintAr: 'وثائق عثمانية وأونروا',
     hintEn: 'Deeds, UNRWA, Mandate',
   },
+  {
+    key: 'connections',
+    href: '/dashboard/connections',
+    matchPrefix: ['/dashboard/connections'],
+    icon: Link2,
+    ar: 'روابط',
+    en: 'Connections',
+    hintAr: 'روابط محتملة مع أشجار أخرى',
+    hintEn: 'Possible links to other trees',
+  },
 ];
 
 export function DiscoveryTabs() {
@@ -94,7 +104,7 @@ export function DiscoveryTabs() {
     >
       <div className="mb-3 flex items-baseline justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--jt-olive-700)]">
-          {t('ابحث في خمسة أبعاد', 'Discovery — five dimensions')}
+          {t('ابحث واكتشف الروابط', 'Discovery & connections')}
         </p>
         <span className="hidden text-[11px] text-[var(--jt-stone-500)] md:inline">
           {t(
@@ -107,7 +117,7 @@ export function DiscoveryTabs() {
       <div
         role="tablist"
         aria-label={t('أبعاد البحث', 'Search dimensions')}
-        className="grid gap-2 rounded-3xl border border-[var(--jt-olive-200)]/60 bg-[var(--card)] p-2 shadow-[var(--jt-shadow-sm)] sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-2 rounded-3xl border border-[var(--jt-olive-200)]/60 bg-[var(--card)] p-2 shadow-[var(--jt-shadow-sm)] sm:grid-cols-2 lg:grid-cols-6"
       >
         {DIMENSIONS.map((d, i) => {
           const isActive = d.matchPrefix.some((p) => pathname.startsWith(p));

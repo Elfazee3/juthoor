@@ -1,14 +1,17 @@
 import { getLoggedInUserId } from '@/data/user/user';
+import { friendlyAuthError } from '@/lib/auth/authErrors';
 import { createSafeActionClient } from 'next-safe-action';
 import 'server-only';
 
 export const actionClient = createSafeActionClient({
-  // Surface the actual error message to the client instead of the default
-  // "Something went wrong while executing the operation". Supabase auth
-  // errors (invalid OTP, expired token, user not found, etc.) carry the
-  // information the user needs to recover.
+  // Log the raw error server-side for debugging, but return only a safe,
+  // bilingual message to the client. Known auth failures (invalid OTP, expired
+  // token, wrong credentials, rate limit, ...) map to a specific friendly
+  // message; anything else collapses to a generic one so raw Supabase / DB
+  // internals never reach the browser.
   handleServerError(error) {
-    return error instanceof Error ? error.message : String(error);
+    console.error('[safe-action] server error:', error);
+    return friendlyAuthError(error);
   },
 });
 

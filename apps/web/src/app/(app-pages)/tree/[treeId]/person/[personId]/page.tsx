@@ -16,6 +16,7 @@ import { getPrimaryPhotoUrl } from '@/data/user/attachments';
 import { loadPersonProfile } from '@/data/user/personProfiles';
 import { buildNeighbors } from '@/lib/tree/relationships';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 
 interface Props {
   readonly params: Promise<{
@@ -30,10 +31,9 @@ interface Props {
  * Read-only members can VIEW evidence but not modify it.
  */
 async function viewerCanManage(treeId: string): Promise<boolean> {
-  const supabase = await createJuthoorSupabaseClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const uid = authData.user?.id;
+  const uid = await getCachedLoggedInUserIdOrNull();
   if (!uid) return false;
+  const supabase = await createJuthoorSupabaseClient();
 
   const { data: tree } = await supabase
     .from('trees')

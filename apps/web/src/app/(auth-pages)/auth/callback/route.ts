@@ -2,11 +2,14 @@ import { createServerClient } from '@supabase/ssr';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { sanitizeNextPath } from '@/lib/auth/safeRedirect';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const next = requestUrl.searchParams.get('next');
+
+  const authCodeError = new URL('/auth/auth-code-error', requestUrl.origin);
 
   if (code) {
     const cookieStore = await cookies();
@@ -27,26 +30,21 @@ export async function GET(request: Request) {
       }
     );
 
+    // On any failure to exchange the code, send the user to the error page
+    // rather than silently dropping them on the dashboard unauthenticated.
     try {
-      // Exchange the code for a session
-      await supabase.auth.exchangeCodeForSession(code);
-    } catch (error) {
-      // Handle error
-      console.error('Failed to exchange code for session: ', error);
-      // Potentially return an error response here
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        return NextResponse.redirect(authCodeError);
+      }
+    } catch {
+      return NextResponse.redirect(authCodeError);
     }
   }
 
   revalidatePath('/', 'layout');
 
-  let redirectTo = new URL('/dashboard', requestUrl.origin);
-
-  if (next) {
-    // decode next param
-    const decodedNext = decodeURIComponent(next);
-    // validate next param
-    redirectTo = new URL(decodedNext, requestUrl.origin);
-  }
-
+  // `next` is untrusted — sanitize to a same-origin path to avoid open redirect.
+  const redirectTo = new URL(sanitizeNextPath(next), requestUrl.origin);
   return NextResponse.redirect(redirectTo);
 }

@@ -16,7 +16,11 @@ jobs:
     name: Playwright e2e
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    if: ${{ github.repository == 'imbhargav5/nextbase-nextjs-supabase-starter' }}
+    # The Playwright e2e suite is stale (Nextbase-era specs); it is revived in
+    # task A8. Until then this job is disabled. The pgTAP job below runs the DB
+    # gate on the Juthoor fork on every push/PR (the old upstream-repo guard
+    # meant nothing ran here at all).
+    if: false
     env:
       PORT: 3000
       NODE_ENV: test
@@ -56,7 +60,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.84.10
 
       - name: Start Supabase in background
         run: |
@@ -132,3 +136,49 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
           retention-days: 30
+
+  pgtap:
+    name: pgTAP database tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      TURBO_TELEMETRY_DISABLED: 1
+
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 🚂 CI Setup
+        uses: ./.github/actions/ci-setup
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.84.10
+
+      - name: Start Supabase in background
+        run: |
+          cd apps/database
+          supabase start --exclude realtime,imgproxy,studio,edge-runtime,vector &
+          echo "Supabase starting in background..."
+
+      - name: Wait for Supabase to be ready
+        run: |
+          timeout=180
+          counter=0
+          echo "Waiting for Supabase to be ready..."
+          until curl -s http://localhost:54321/rest/v1/ > /dev/null; do
+            if [ $counter -eq $timeout ]; then
+              echo "Timeout waiting for Supabase"
+              exit 1
+            fi
+            counter=$((counter + 1))
+            sleep 1
+          done
+          echo "Supabase is ready!"
+
+      - name: Run pgTAP tests
+        run: pnpm run test:db

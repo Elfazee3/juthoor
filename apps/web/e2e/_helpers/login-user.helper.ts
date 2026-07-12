@@ -1,72 +1,12 @@
-import { request, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { getOtpCodeForAddress } from './inbucket';
 
-const INBUCKET_URL = 'http://localhost:54324';
-
-interface InbucketMessage {
-  ID: string;
-  Created: string;
-}
-
-interface InbucketMessageDetail {
-  Text: string;
-}
-
-async function getLatestEmailForAddress(emailAddress: string): Promise<InbucketMessageDetail | null> {
-  const mailbox = emailAddress.split('@')[0];
-  const requestContext = await request.newContext();
-
-  try {
-    for (let i = 0; i < 20; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const response = await requestContext
-        .get(`${INBUCKET_URL}/api/v1/search?query=${mailbox}&limit=20`)
-        .catch(() => null);
-      if (!response?.ok()) continue;
-
-      const body = (await response.json().catch(() => null)) as
-        | { messages?: InbucketMessage[] }
-        | null;
-      const messages = body?.messages ?? [];
-      if (!messages.length) continue;
-
-      const latest = [...messages].sort(
-        (a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime()
-      )[0];
-      const detailResponse = await requestContext
-        .get(`${INBUCKET_URL}/api/v1/message/${latest.ID}`)
-        .catch(() => null);
-      if (!detailResponse?.ok()) continue;
-
-      const detail = (await detailResponse.json().catch(() => null)) as
-        | InbucketMessageDetail
-        | null;
-      if (detail?.Text) {
-        return detail;
-      }
-    }
-    return null;
-  } finally {
-    await requestContext.dispose();
-  }
-}
-
-function extractConfirmationLink(text: string, siteURL: string): string | null {
-  const patterns = [
-    /Log In \( (.+) \)/i,
-    /(https?:\/\/127\.0\.0\.1[^\s"<]+)/i,
-    /(https?:\/\/localhost[^\s"<]+)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (!match) continue;
-
-    const link = new URL(match[1]);
-    link.searchParams.set('redirect_to', new URL('/auth/callback', siteURL).toString());
-    return link.toString();
-  }
-  return null;
-}
-
+/**
+ * Log an EXISTING user in via the OTP tab on /login (the Magic-Link tab is gone).
+ * Reads the code from Inbucket and types it into the segmented OtpCodeInput.
+ * Most authenticated specs reuse the saved storageState instead of calling this;
+ * it exists for specs that must exercise a fresh interactive login.
+ */
 export async function loginUserHelper({
   page,
   emailAddress,
@@ -75,16 +15,16 @@ export async function loginUserHelper({
   emailAddress: string;
 }): Promise<void> {
   await page.goto('/login');
-  await page.getByRole('tab', { name: 'Magic Link' }).click();
-  await page.getByPlaceholder(/email/i).fill(emailAddress);
-  await page.getByRole('button', { name: /send magic link|sign in/i }).click();
+  await page.getByRole('tab', { name: /OTP Code/i }).click();
+  await page.locator('#otp-email').fill(emailAddress);
+  await page.getByRole('button', { name: /Send .*code|أرسل الرمز/ }).click();
 
-  const emailDetail = await getLatestEmailForAddress(emailAddress);
-  if (!emailDetail) throw new Error('No login email received');
+  const code = await getOtpCodeForAddress(emailAddress);
+  await page.getByLabel('digit 1').waitFor({ state: 'visible', timeout: 15000 });
+  for (let i = 0; i < code.length; i++) {
+    await page.getByLabel(`digit ${i + 1}`).fill(code[i]);
+  }
+  await page.getByRole('button', { name: /Verify & sign in|تحقّق وادخل/ }).click();
 
-  const link = extractConfirmationLink(emailDetail.Text, page.url());
-  if (!link) throw new Error('Could not find login link in email');
-
-  await page.goto(link);
-  await page.waitForURL(/dashboard|app/, { timeout: 30000 });
+  await page.waitForURL(/dashboard/, { timeout: 30000 });
 }

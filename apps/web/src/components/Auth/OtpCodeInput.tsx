@@ -3,9 +3,11 @@
 import { useEffect, useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
 
 /**
- * Six-cell OTP code entry. Auto-advances on input, supports paste, backspace
- * jump-back, and arrow-key navigation. Calls `onComplete(code)` once all 6
- * digits are filled.
+ * Segmented OTP code entry with `length` cells. Auto-advances on input,
+ * supports paste, backspace jump-back, and arrow-key navigation. Calls
+ * `onComplete(code)` once all `length` cells are filled. The submit button
+ * (in the parent) also accepts any 6–8 digit code via `isValidOtp`, so a
+ * shorter-than-`length` valid code can still be submitted manually.
  */
 export function OtpCodeInput({
   value,

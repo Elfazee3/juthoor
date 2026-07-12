@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Private items management', () => {
+// QUARANTINED (A8): this is a Nextbase-starter "Private Item" CRUD spec. Juthoor
+// replaced that feature — /dashboard/new is now the family-tree creation flow, and
+// there is no "Private Items" list. Kept as a skipped placeholder rather than
+// deleted, to be rewritten against a real Juthoor owner flow (e.g. tree creation).
+test.describe.skip('Private items management', () => {
   test('can navigate to create new item', async ({ page }) => {
     await page.goto('/dashboard');
     await page.getByRole('link', { name: /new private item/i }).click();

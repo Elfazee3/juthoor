@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { OtpCodeInput } from '@/components/Auth/OtpCodeInput';
 import { useLocale } from '@/contexts/LocaleContext';
 import { requestEmailOtpAction, verifyEmailOtpAction } from '@/data/auth/auth';
-import { OTP_LENGTH } from '@/lib/auth/otpConfig';
+import { OTP_LENGTH, isValidOtp } from '@/lib/auth/otpConfig';
 
 type Step = 'email' | 'code';
 
@@ -241,7 +241,7 @@ export function SignUp({ next }: { next?: string }) {
                 <Button
                   type="button"
                   onClick={() => verify(code)}
-                  disabled={busy || code.length !== OTP_LENGTH}
+                  disabled={busy || !isValidOtp(code)}
                   className="w-full bg-[var(--jt-olive-700)] hover:bg-[var(--jt-olive-800)]"
                 >
                   {busy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="me-2 h-4 w-4" />}

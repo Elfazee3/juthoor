@@ -1,6 +1,8 @@
 'use server';
 
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
+import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
+import { shouldHideLifeData } from '@/lib/privacy/lifeData';
 
 /** One row of the "list of all people" table. */
 export interface PersonListRow {
@@ -98,9 +100,14 @@ export async function getTreePeoplePage(
     persons.map((p) => p.id)
   );
 
+  // A living person's birth year + birthplace are hidden from viewers without
+  // privileged (owner / approved-member) access to the tree (plan §5.5).
+  const privileged = await viewerCanWriteTree(supabase, args.treeId);
+
   return {
     rows: persons.map((p) => {
       const f = facts.get(p.id);
+      const hide = shouldHideLifeData(p.is_living, privileged);
       return {
         id: p.id,
         displayNameAr: p.display_name_ar,
@@ -108,8 +115,8 @@ export async function getTreePeoplePage(
         gender: p.gender,
         isPlaceholder: p.notes === 'placeholder',
         isLiving: p.is_living,
-        birthYear: f?.birthYear ?? null,
-        birthPlaceAr: f?.birthPlaceAr ?? null,
+        birthYear: hide ? null : (f?.birthYear ?? null),
+        birthPlaceAr: hide ? null : (f?.birthPlaceAr ?? null),
         deathYear: f?.deathYear ?? null,
       };
     }),
@@ -117,6 +124,31 @@ export async function getTreePeoplePage(
     page,
     pageSize,
   };
+}
+
+/** True when the current viewer owns or is an approved member of the tree. */
+async function viewerCanWriteTree(
+  supabase: Awaited<ReturnType<typeof createJuthoorSupabaseClient>>,
+  treeId: string
+): Promise<boolean> {
+  const uid = await getCachedLoggedInUserIdOrNull();
+  if (!uid) return false;
+  const [{ data: owned }, { data: member }] = await Promise.all([
+    supabase
+      .from('trees')
+      .select('id')
+      .eq('id', treeId)
+      .eq('owner_id', uid)
+      .maybeSingle(),
+    supabase
+      .from('tree_members')
+      .select('tree_id')
+      .eq('tree_id', treeId)
+      .eq('user_id', uid)
+      .eq('status', 'approved')
+      .maybeSingle(),
+  ]);
+  return Boolean(owned) || Boolean(member);
 }
 
 interface LifeFacts {

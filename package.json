@@ -24,6 +24,7 @@
     "database#stop": "turbo run database#stop",
     "database#status": "turbo run database#status",
     "test:e2e": "turbo run test:e2e --filter=web",
+    "test:db": "turbo run test-db --filter=database",
     "supabase:sync-env": "tsx scripts/sync-supabase-env.ts"
   },
   "devDependencies": {

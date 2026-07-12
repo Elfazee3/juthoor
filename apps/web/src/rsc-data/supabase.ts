@@ -13,20 +13,6 @@ export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
   return data;
 });
 
-// Only meant to be used in protected pages
-// This doesn't verify the token with the server, it only validates the stored token
-export const getCachedLoggedInSupabaseUser = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
-  }
-  if (!data.session?.user) {
-    throw new Error('No user found');
-  }
-  return data.session.user;
-});
-
 export const getCachedLoggedInUserClaims = cache(async () => {
   const supabase = await createSupabaseClient();
   const { data, error } = await supabase.auth.getClaims();
@@ -58,4 +44,12 @@ export const getCachedIsUserLoggedIn = cache(async () => {
 export const getCachedLoggedInUserId = cache(async () => {
   const claims = await getCachedLoggedInUserClaims();
   return claims.sub;
+});
+
+// Like getCachedLoggedInUserId but returns null for an unauthenticated visitor
+// instead of throwing — for data reads that degrade to "no user" (return null /
+// empty) rather than erroring. Uses claims (local JWT), so no network round trip.
+export const getCachedLoggedInUserIdOrNull = cache(async () => {
+  const claims = await getCachedLoggedInUserClaimsOrNull();
+  return claims?.sub ?? null;
 });

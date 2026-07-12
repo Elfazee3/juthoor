@@ -418,6 +418,65 @@ type MutableProfile = {
   updated_at: string;
 };
 
+// ── Matching engine M3 (owner-facing) ────────────────────────────────────────
+export type HintStatus = 'pending' | 'accepted' | 'rejected';
+
+type MutableMatchHint = {
+  id: string;
+  match_id: string;
+  owner_user_id: string;
+  counterpart_person_id: string;
+  status: HintStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+type MutablePersonPrivacyHold = {
+  person_id: string;
+  set_by: string | null;
+  set_at: string;
+  reason: string | null;
+};
+
+type MutableNotification = {
+  id: string;
+  recipient_user_id: string;
+  kind: string;
+  match_id: string | null;
+  person_link_id: string | null;
+  title_ar: string | null;
+  title_en: string | null;
+  body_ar: string | null;
+  body_en: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
+/** Row of the masked, SECURITY DEFINER match_review_cards view (owner/admin). */
+export type MatchReviewCardRow = {
+  match_id: string;
+  confidence_score: number;
+  status: MatchStatus;
+  created_at: string;
+  updated_at: string;
+  viewer_person_id: string;
+  viewer_name_ar: string | null;
+  viewer_name_en: string | null;
+  counterpart_person_id: string;
+  counterpart_is_living: boolean;
+  living_involved: boolean;
+  counterpart_revealed: boolean;
+  counterpart_masked: boolean;
+  counterpart_initials: string | null;
+  counterpart_district_ar: string | null;
+  counterpart_district_en: string | null;
+  counterpart_decade: number | null;
+  counterpart_label_ar: string;
+  counterpart_label_en: string;
+  field_agreement: Json | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -536,9 +595,34 @@ export type Database = {
         Update: Partial<MutableMatchPath>;
         Relationships: [];
       };
+      match_hints: {
+        Row: MutableMatchHint;
+        Insert: Partial<MutableMatchHint> & {
+          match_id: string;
+          owner_user_id: string;
+          counterpart_person_id: string;
+        };
+        Update: Partial<MutableMatchHint>;
+        Relationships: [];
+      };
+      person_privacy_holds: {
+        Row: MutablePersonPrivacyHold;
+        Insert: Partial<MutablePersonPrivacyHold> & { person_id: string };
+        Update: Partial<MutablePersonPrivacyHold>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: MutableNotification;
+        Insert: Partial<MutableNotification> & { recipient_user_id: string; kind: string };
+        Update: Partial<MutableNotification>;
+        Relationships: [];
+      };
     };
     Views: {
-      [_ in never]: never;
+      match_review_cards: {
+        Row: MatchReviewCardRow;
+        Relationships: [];
+      };
     };
     Functions: {
       create_person_with_primary_name: {
@@ -628,6 +712,21 @@ export type Database = {
       };
       arabic_phonetic: { Args: { txt: string }; Returns: string };
       normalize_arabic: { Args: { txt: string }; Returns: string };
+      // Matching engine (M1–M3)
+      is_person_living: { Args: { p_person_id: string }; Returns: boolean };
+      score_pair: {
+        Args: { p_a: string; p_b: string };
+        Returns: { score: number; breakdown: Json }[];
+      };
+      resolve_match: {
+        Args: { p_match_id: string; p_decision: string; p_note?: string | null };
+        Returns: undefined;
+      };
+      resolve_match_hint: {
+        Args: { p_hint_id: string; p_accept: boolean };
+        Returns: undefined;
+      };
+      revoke_person_link: { Args: { p_link_id: string }; Returns: undefined };
     };
     Enums: {
       gender_type: GenderType;
@@ -639,6 +738,7 @@ export type Database = {
       tree_member_status: TreeMemberStatus;
       attachment_kind: AttachmentKind;
       attachment_tag: AttachmentTag;
+      hint_status: HintStatus;
     };
     CompositeTypes: {
       [_ in never]: never;

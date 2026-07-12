@@ -31,7 +31,14 @@ export function UpdatePassword() {
       router.push('/auth/callback');
     },
     onError: ({ error }) => {
-      const errorMessage = error.serverError ?? 'Failed to update password';
+      // Surface the schema's (bilingual) validation message, not just server errors.
+      const validationErrors = error.validationErrors as
+        | { password?: { _errors?: string[] } }
+        | undefined;
+      const errorMessage =
+        error.serverError ??
+        validationErrors?.password?._errors?.[0] ??
+        'Failed to update password';
       toast.error(errorMessage, {
         id: toastRef.current,
       });

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
+import { sanitizeNextPath } from '@/lib/auth/safeRedirect';
 
 // Handles email link confirmations (magic link, signup, invite, recovery,
 // email-change). Supabase sends `type` and `token_hash` in the URL; we hand
@@ -10,9 +11,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  const rawNext = searchParams.get('next') ?? '/dashboard';
-  // Only allow same-origin paths to avoid open-redirect via the `next` param.
-  const next = rawNext.startsWith('/') ? rawNext : '/dashboard';
+  // Sanitize to a same-origin path to avoid open-redirect via the `next` param
+  // (also rejects protocol-relative `//host` and backslash tricks).
+  const next = sanitizeNextPath(searchParams.get('next'));
 
   if (token_hash && type) {
     const cookieStore = await cookies();
