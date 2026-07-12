@@ -46,6 +46,7 @@ setup('create test user', async ({ page }) => {
   if (!res.ok()) {
     throw new Error(`[setup] admin create-user failed: ${res.status()} ${await res.text()}`);
   }
+  const userId = ((await res.json()) as { id: string }).id;
   await ctx.dispose();
 
   await page.goto('/login');
@@ -58,4 +59,6 @@ setup('create test user', async ({ page }) => {
   const authDir = path.dirname(authFile);
   if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true });
   await page.context().storageState({ path: authFile });
+  // persist the uid so owner-facing specs can seed data owned by this user
+  fs.writeFileSync(path.join(authDir, 'user_1.meta.json'), JSON.stringify({ userId, email }));
 });
