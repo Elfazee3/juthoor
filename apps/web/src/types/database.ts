@@ -628,6 +628,16 @@ export type Database = {
       };
       arabic_phonetic: { Args: { txt: string }; Returns: string };
       normalize_arabic: { Args: { txt: string }; Returns: string };
+      // Matching engine (M1–M3)
+      is_person_living: { Args: { p_person_id: string }; Returns: boolean };
+      score_pair: {
+        Args: { p_a: string; p_b: string };
+        Returns: { score: number; breakdown: Json }[];
+      };
+      resolve_match: {
+        Args: { p_match_id: string; p_decision: string; p_note?: string | null };
+        Returns: undefined;
+      };
     };
     Enums: {
       gender_type: GenderType;
