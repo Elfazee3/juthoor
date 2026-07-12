@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { type ReactNode, Suspense } from 'react';
 import { AppSidebar } from './app-sidebar';
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
+import { NotificationBellShell } from '@/components/notifications/NotificationBellShell';
 
 async function AuthGuard({ children }: { children: ReactNode }) {
   const isLoggedIn = await getCachedIsUserLoggedIn();
@@ -39,6 +40,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Suspense fallback={null}>
             <DynamicBreadcrumb />
           </Suspense>
+          <div className="ms-auto flex items-center">
+            <Suspense fallback={null}>
+              <NotificationBellShell />
+            </Suspense>
+          </div>
         </header>
         <Suspense fallback={null}>
           <AuthGuard>{children}</AuthGuard>

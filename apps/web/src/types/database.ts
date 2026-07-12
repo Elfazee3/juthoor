@@ -438,6 +438,21 @@ type MutablePersonPrivacyHold = {
   reason: string | null;
 };
 
+type MutableNotification = {
+  id: string;
+  recipient_user_id: string;
+  kind: string;
+  match_id: string | null;
+  person_link_id: string | null;
+  title_ar: string | null;
+  title_en: string | null;
+  body_ar: string | null;
+  body_en: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 /** Row of the masked, SECURITY DEFINER match_review_cards view (owner/admin). */
 export type MatchReviewCardRow = {
   match_id: string;
@@ -594,6 +609,12 @@ export type Database = {
         Row: MutablePersonPrivacyHold;
         Insert: Partial<MutablePersonPrivacyHold> & { person_id: string };
         Update: Partial<MutablePersonPrivacyHold>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: MutableNotification;
+        Insert: Partial<MutableNotification> & { recipient_user_id: string; kind: string };
+        Update: Partial<MutableNotification>;
         Relationships: [];
       };
     };
