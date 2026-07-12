@@ -60,7 +60,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.84.10
 
       - name: Start Supabase in background
         run: |
@@ -157,7 +157,7 @@ jobs:
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.84.10
 
       - name: Start Supabase in background
         run: |
