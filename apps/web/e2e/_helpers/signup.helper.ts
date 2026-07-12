@@ -1,92 +1,44 @@
-import { expect, request, type Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { getOtpCodeForAddress } from './inbucket';
 
-const INBUCKET_URL = 'http://localhost:54324';
-
-interface InbucketMessage {
-  ID: string;
-  Created: string;
-}
-
-interface InbucketMessageDetail {
-  Text: string;
-}
-
-async function getLatestEmailForAddress(emailAddress: string): Promise<InbucketMessageDetail | null> {
-  const mailbox = emailAddress.split('@')[0];
-  const requestContext = await request.newContext();
-
-  try {
-    for (let i = 0; i < 20; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const response = await requestContext
-        .get(`${INBUCKET_URL}/api/v1/search?query=${mailbox}&limit=20`)
-        .catch(() => null);
-      if (!response?.ok()) continue;
-
-      const body = (await response.json().catch(() => null)) as
-        | { messages?: InbucketMessage[] }
-        | null;
-      const messages = body?.messages ?? [];
-      if (!messages.length) continue;
-
-      const latest = [...messages].sort(
-        (a, b) => new Date(b.Created).getTime() - new Date(a.Created).getTime()
-      )[0];
-      const detailResponse = await requestContext
-        .get(`${INBUCKET_URL}/api/v1/message/${latest.ID}`)
-        .catch(() => null);
-      if (!detailResponse?.ok()) continue;
-
-      const detail = (await detailResponse.json().catch(() => null)) as
-        | InbucketMessageDetail
-        | null;
-      if (detail?.Text) {
-        return detail;
-      }
-    }
-    return null;
-  } finally {
-    await requestContext.dispose();
-  }
-}
-
-function extractConfirmationLink(text: string, siteURL: string): string | null {
-  const patterns = [
-    /Log In \( (.+) \)/i,
-    /Confirm your email address[^"]*"(https?:\/\/[^"]+)"/i,
-    /(https?:\/\/127\.0\.0\.1[^\s"<]+)/i,
-    /(https?:\/\/localhost[^\s"<]+)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (!match) continue;
-
-    const link = new URL(match[1]);
-    link.searchParams.set('redirect_to', new URL('/auth/callback', siteURL).toString());
-    return link.toString();
-  }
-  return null;
-}
-
+/**
+ * Sign up a fresh user through the REAL Juthoor UI: /sign-up collects a display
+ * name + email + consent, sends an OTP, and we read the code from Inbucket and
+ * enter it into the segmented OtpCodeInput. Local signup auto-confirms, so this
+ * lands on /dashboard logged in. (The removed Magic-Link tab is gone.)
+ */
 export async function signupUserHelper({
   page,
   emailAddress,
+  displayName = 'E2E Tester',
 }: {
   page: Page;
   emailAddress: string;
+  displayName?: string;
 }): Promise<void> {
   await page.goto('/sign-up');
-  await page.getByRole('tab', { name: 'Magic Link' }).click();
-  await page.getByPlaceholder(/email/i).fill(emailAddress);
-  await page.getByRole('button', { name: /send magic link|sign up/i }).click();
-  await expect(page.getByText('Confirmation Link Sent')).toBeVisible();
+  await page.locator('#display-name').fill(displayName);
+  await page.locator('#email').fill(emailAddress);
 
-  const emailDetail = await getLatestEmailForAddress(emailAddress);
-  if (!emailDetail) throw new Error('No confirmation email received');
+  // the consent checkbox gates the submit button
+  const consent = page.locator('input[type="checkbox"]').first();
+  if (await consent.count()) {
+    await consent.check().catch(() => undefined);
+  }
 
-  const link = extractConfirmationLink(emailDetail.Text, page.url());
-  if (!link) throw new Error('Could not find confirmation link in email');
+  await page.getByRole('button', { name: /Send code|أرسل الرمز/ }).click();
 
-  await page.goto(link);
-  await page.waitForURL(/dashboard|app/, { timeout: 30000 });
+  // segmented OTP entry — cells carry aria-label "digit N"; fill each explicitly
+  // (a controlled maxLength=1 input needs a real value set per cell to fire the
+  // onChange that advances focus and, on the last cell, auto-submits).
+  const code = await getOtpCodeForAddress(emailAddress);
+  await page.getByLabel('digit 1').waitFor({ state: 'visible', timeout: 15000 });
+  for (let i = 0; i < code.length; i++) {
+    await page.getByLabel(`digit ${i + 1}`).fill(code[i]);
+  }
+  // local sends a 6-digit code into an 8-cell input, so onComplete won't auto-fire;
+  // the app accepts 6–8 digits via the manual verify button (brief §3).
+  await page.getByRole('button', { name: /Verify & sign in|تحقّق وادخل/ }).click();
+
+  await page.waitForURL(/dashboard/, { timeout: 30000 });
 }

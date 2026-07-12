@@ -1,35 +1,23 @@
 import { test, expect } from '@playwright/test';
 
-test.describe.parallel('Logged-in user page access', () => {
-  test('can access dashboard', async ({ page }) => {
+// Runs with the saved storageState of a freshly signed-up (non-admin) user.
+test.describe('Logged-in user page access', () => {
+  test('can open the dashboard (not bounced to login)', async ({ page }) => {
     await page.goto('/dashboard');
-    await expect(page).toHaveURL('/dashboard');
-    await expect(
-      page.getByRole('heading', { name: 'Dashboard' })
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test('can access private items', async ({ page }) => {
-    await page.goto('/private-items');
-    await expect(page).toHaveURL('/private-items');
-    await expect(
-      page.getByRole('heading', { name: 'Private Items', level: 1 })
-    ).toBeVisible();
+  test('can open the connections lane', async ({ page }) => {
+    await page.goto('/dashboard/connections');
+    await expect(page).toHaveURL(/\/dashboard\/connections/);
+    await expect(page).not.toHaveURL(/\/login/);
   });
 
-  test('can access home page', async ({ page }) => {
-    await page.goto('/');
-    await expect(page).toHaveURL('/');
-    await expect(
-      page.getByRole('heading', { name: /build your.+saas product.+faster/i })
-    ).toBeVisible();
-  });
-
-  test('can access about page', async ({ page }) => {
-    await page.goto('/about');
-    await expect(page).toHaveURL('/about');
-    await expect(
-      page.getByRole('heading', { name: /modern full-stack starter kit/i })
-    ).toBeVisible();
+  test('a non-admin is not shown the admin review queue (404)', async ({ page }) => {
+    await page.goto('/admin/review');
+    // notFound() for non-admins — the admin queue heading must never render
+    await expect(page.getByText('طابور المطابقات المقترحة')).toHaveCount(0);
+    await expect(page.getByText('Proposed match queue')).toHaveCount(0);
   });
 });
