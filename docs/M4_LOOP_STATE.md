@@ -80,3 +80,29 @@ guidance pattern from that ledger for anything added here._
 | 6 | 2026-07-12 | F5 | DONE (LIVE-APPLIED) | Batch completed: proposed person_links per queued pair (never-downgrade), overlay drain at batch end, + fixed the latent CONCURRENTLY-in-function drain bug. Tests 6→9; pgTAP 189/189; live smoked (in-txn drain works, 0 unprocessed). The nightly now runs the full link-not-merge pipeline. Next: F6 ([E2E] re-enable Playwright in CI). |
 | 7 | 2026-07-12 | F6 | DONE | **★ e2e GREEN IN CI ★** (PR #3, 4m50s). Re-enabled job + `--with-deps` + build-time NEXT_PUBLIC_* export; branch pushed (-u) + draft PR #3 opened (CI only fires on PRs to main). Fix-forward ×1: F4 route's `force-dynamic` broke the Turbopack build under cacheComponents (build-only rule; local build now part of verification) → removed. All 4 PR checks green. Next: F7 (replace quarantined private-items spec) — the FINAL task. |
 | 8 | 2026-07-12 | F7 | DONE | Quarantined Nextbase spec deleted; new `juthoor-owner-flow.spec.ts` (6 lanes + bell, dashboard→tree empty state, Connections lane) — **local 18 passed / 0 skipped**. Fix-forwards: dispatchEvent clicks (sidebar overlap) + empty-state assertions from a live snapshot. **ALL BOARD TASKS DONE — next wakeup: verify CI on the F7 push, write the final summary, mark PR #3 ready, stop.** |
+| 9 | 2026-07-12 | FINAL | DONE | Final CI on `cb745a2`: **all 4 checks green incl. Playwright e2e (5m18s) running the F7 specs in CI**. Final summary written below; PR #3 marked ready (never merged — founder's call); loop stopped. |
+
+---
+
+## ✅ FINAL SUMMARY — M4/Follow-up loop complete (2026-07-12)
+
+**All 8 board tasks DONE (0 blocked).** Branch `feat/m4-followups`, PR **#3** (open, READY, **not merged** — merging stays the founder's call). Final CI on `cb745a2`: Playwright e2e ✅ (5m18s) · Type-check/Lint/Build ✅ · pgTAP ✅ · CodeRabbit ✅.
+
+### What shipped
+- **F1 — the full matching engine is on LIVE** (`nlufpicjdeeqcgepewdg`): all 12 M1–M3 feature migrations applied in order, verified (17 tables, overlay matview + unique index, both masked views, 12 functions, shadow row `auto_merge=false thr=450`), plus the **engine lockdown** migration (Postgres's default PUBLIC-execute + Supabase default-privilege grants had left engine internals callable via `/rest/v1/rpc` — now: anon executes NOTHING, authenticated only the self-authorizing user RPCs, engine internals service_role-only, linkage matview client-unreadable). Final advisor scan: 0 engine leaks; the 2 `security_definer_view` ERRORs are accepted-by-design (admin-only `matches` RLS mandates DEFINER views; internal filters pgTAP-proven).
+- **F2 — `profiles.self_person_id` drift closed**: reconstructed byte-faithful from live into a guarded, live-no-op migration; local == live for `profiles`.
+- **F3 — explicit table GRANTs** derived from the actual RLS policy map (guarded per-table; the Nextbase leftovers `content_blog_*`/`private_items` turn out to be local-only). The schema now carries its own privilege floor — CLI upgrades can't regress CI again.
+- **F4 — ★ THE M4 SHADOW PERIOD IS LIVE ★**: 4 active pg_cron jobs on production (`juthoor_nightly_match` 23:30 Mon–Sat incremental, `juthoor_weekly_full` Sun 23:30, `juthoor_features_nightly` 02:15, `juthoor_weekly_eval` Mon 01:00) + the documented fallback route `/api/cron/run-matching` (Bearer `CRON_SECRET`, fire-and-forget via `after()`, advisory-lock double-run-safe, 501 when unconfigured, no secrets committed).
+- **F5 — batch completion**: the nightly now UPSERTs `person_links` as `proposed` per queued pair (never downgrading a human decision) and drains the overlay-refresh queue at batch end; fixed the latent `REFRESH … CONCURRENTLY`-in-function drain bug (proved live).
+- **F6 — Playwright e2e GREEN IN CI** for the first time in the repo's history (re-enabled job, build-time env export, `--with-deps`; fixed the `force-dynamic`-vs-`cacheComponents` build break).
+- **F7 — the Nextbase CRUD spec replaced** by the real owner journey (6 discovery lanes incl. Connections, bell, dashboard→tree empty state); local suite **18 passed / 0 skipped**.
+
+### Gates at close
+pgTAP **189/189** on fresh `db reset` · typecheck 0 · lint 0/0 · 131 unit · e2e 18/18 local **and** green in CI · advisors: baseline + accepted-by-design only · **shadow mode confirmed OFF at every step**.
+
+### What the founder does next
+1. **Review + merge PR #3** when satisfied (the loop never merges).
+2. **Watch the first nightly shadow batch** (tonight 23:30): `SELECT * FROM matching_runs ORDER BY started_at DESC` and the `/admin/review` queue filling up.
+3. **Label matches for ~4 weeks** (admin review UI + owner hints), then read `run_eval`'s precision/recall and only then choose the auto-link threshold and flip `app_settings.auto_merge_enabled` — human decision, never the loop's.
+4. Optional: set `CRON_SECRET` in Vercel if you want the HTTP fallback active; enable leaked-password protection (dashboard toggle).
+5. If you ever switch to `supabase db push`: run the migration-repair commands recorded in this file's ledger and phase-1's.
