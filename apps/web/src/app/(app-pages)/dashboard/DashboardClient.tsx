@@ -39,7 +39,6 @@ export type DashboardData = {
   }>;
   userOrigins: Array<{
     place_id: string | null;
-    places: { name_ar: string; name_en: string | null; district_ar: string | null } | null;
   }>;
   /** Full tree snapshot for the inline mini-chart preview. Null when load failed
    *  or tree is empty — the UI falls back to an empty-state CTA in that case. */
