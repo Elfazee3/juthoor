@@ -91,8 +91,7 @@ const FLOW_SECTIONS = [
 
 const STATS = [
   { value: 15.2, decimals: 1, suffix: 'M', label: 'Palestinians in the diaspora' },
-  { value: 530, decimals: 0, suffix: '+', label: 'documented villages & cities' },
-  { value: 100, decimals: 0, suffix: '%', label: 'free, forever' },
+  { value: 530, decimals: 0, suffix: '+', label: 'Palestinian villages completely demolished by Israel in 1948' },
 ];
 
 export function HomeEnClient() {
@@ -244,12 +243,14 @@ export function HomeEnClient() {
               </motion.div>
 
               <div className="order-1 md:order-2">
-                <motion.p
-                  variants={rise}
-                  className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]"
-                >
-                  Non-profit · Free forever · No ads
-                </motion.p>
+                <motion.div variants={rise} className="mb-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                    Non-profit · Free forever · No ads
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                    By Palestinians, For Palestinians
+                  </span>
+                </motion.div>
                 <motion.h1
                   variants={rise}
                   className="text-[clamp(2rem,5vw,3.4rem)] font-bold leading-tight text-[var(--jt-olive-900)]"
@@ -284,12 +285,12 @@ export function HomeEnClient() {
                   </Link>
                 </motion.div>
 
-                <motion.div variants={rise} className="mt-9 grid grid-cols-3 gap-4 border-t border-[var(--jt-olive-100)] pt-6">
+                <motion.div variants={rise} className="mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t border-[var(--jt-olive-100)] pt-6">
                   {STATS.map((s) => (
                     <div key={s.label}>
                       <div
-                        className="text-2xl font-bold text-[var(--jt-olive-800)] md:text-3xl"
-                        style={{ fontFamily: 'var(--jt-font-display)' }}
+                        className="text-3xl italic text-[var(--jt-olive-800)] md:text-4xl"
+                        style={{ fontFamily: 'var(--jt-font-display)', fontWeight: 500 }}
                       >
                         <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix} />
                       </div>
@@ -326,10 +327,7 @@ export function HomeEnClient() {
                         )}
                       </div>
                       <div className="group -mt-1 flex-1 rounded-2xl p-4 pb-9 transition-colors hover:bg-[var(--jt-olive-50)]/50">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-olive-600)]">
-                          {s.ref}
-                        </span>
-                        <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+                        <h2 className="text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
                           {s.title}
                         </h2>
                         <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{s.body}</p>
