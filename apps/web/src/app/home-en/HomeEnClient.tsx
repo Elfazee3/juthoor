@@ -243,13 +243,21 @@ export function HomeEnClient() {
               </motion.div>
 
               <div className="order-1 md:order-2">
-                <motion.div variants={rise} className="mb-3 flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                    Non-profit · Free forever · No ads
-                  </span>
+                <motion.div variants={rise} className="mb-3 flex flex-col items-start gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
                     By Palestinians, For Palestinians
                   </span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                      Non-profit
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                      Free forever
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                      No ads
+                    </span>
+                  </div>
                 </motion.div>
                 <motion.h1
                   variants={rise}
