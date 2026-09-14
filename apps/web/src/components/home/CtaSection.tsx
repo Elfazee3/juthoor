@@ -49,7 +49,7 @@ export function CtaSection() {
               {t('لا يمكن لقصة عائلتك ان تنسى أو ان تمحى.', "Your family's story belongs here.")}
             </motion.h2>
             <motion.p
-              className="mt-5 max-w-lg text-[15px] leading-[1.85] text-[var(--jt-stone-600)]"
+              className="mt-5 max-w-lg text-[16px] leading-[1.85] text-[var(--jt-stone-600)]"
               initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.5 }}

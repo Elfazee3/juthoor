@@ -90,7 +90,7 @@ export function HeroSection() {
                 delay={70}
                 startDelay={0.9}
               />
-              <motion.p variants={rise} className="mt-5 max-w-xl text-[15px] font-normal leading-[1.85] text-[var(--jt-stone-600)]">
+              <motion.p variants={rise} className="mt-5 max-w-xl text-[16px] font-normal leading-[1.85] text-[var(--jt-stone-600)]">
                 {t(
                   'كل عائلة تُسجَّل هي عائلة تُذكر. ابحث عن أقاربك، وابنِ شجرتك، وأعد ربطها بشجرة العائلة الفلسطينية الأوسع — بيتًا بيتًا، وقريةً قريةً، وجيلًا بعد جيل.',
                   'Every family recorded is a family remembered. Search for your relatives, build your tree, and reconnect it to the wider Palestinian Family Tree — one household, one village, one generation at a time.',
