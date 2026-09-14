@@ -20,11 +20,15 @@ import {
  * Page wireframe ("1 E Home Page.pdf") and FRS Appendix 2 ("Front-End GUI
  * Design", Module 2.0 — Home Page):
  *
- *  Bar 1: Home / Trees / Individuals / Families / VCC / Picture Archive /
- *         Document Archive  ...............................  Log In / Register
- *  Bar 2: [logo]  Who We Are | Why Are We Doing This | How Does This Work | Contact Us
- *  Body:  Who We Are -> Why Are We Doing This -> How Does This Work -> Contact Us,
- *         drawn in the wireframe as one connected vertical flow, not a card grid.
+ *  Top bar: Home / Trees / Individuals / Families / VCC / Picture Archive /
+ *           Document Archive  .........................  Log In / Register
+ *  Sidebar: [logo]  Who We Are | Why Are We Doing This | How Does This Work | Contact Us
+ *  Body:    Who We Are -> Why Are We Doing This -> How Does This Work -> Contact Us,
+ *           drawn in the wireframe as one connected vertical flow, not a card grid.
+ *
+ * The wireframe's second nav bar is rendered here as a sticky sidebar
+ * instead, per feedback — same four links, alongside the content rather
+ * than stacked above it.
  *
  * Standalone preview at /home-en — deliberately not linked from the live
  * (Arabic-first) homepage or global nav; see chat for context.
@@ -79,9 +83,20 @@ export function HomeEnClient() {
         English homepage preview — structured per the platform's Home Page wireframe and FRS Appendix 2 · Module 2.0. Not linked from the live site.
       </div>
 
-      {/* Bar 1 — module nav + login */}
+      {/* Top bar — module nav + login */}
       <header className="sticky top-0 z-40 border-b border-[var(--jt-stone-200)] bg-[var(--background)]/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-1 px-5">
+          <Link href="/home-en" className="me-2 flex shrink-0 items-center gap-2">
+            <span
+              aria-hidden
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]"
+            >
+              <TreeDeciduous className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-bold text-[var(--jt-olive-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+              Juthoor
+            </span>
+          </Link>
           <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
             {MODULE_NAV.map((item) => (
               <Link
@@ -114,115 +129,114 @@ export function HomeEnClient() {
             Log In / Register
           </Link>
         </div>
-
-        {/* Bar 2 — brand + the four narrative-flow anchors */}
-        <div className="border-t border-[var(--jt-stone-100)] bg-[var(--jt-olive-50)]/60">
-          <div className="mx-auto flex h-12 max-w-screen-2xl items-center gap-6 px-5">
-            <Link href="/home-en" className="flex shrink-0 items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]"
-              >
-                <TreeDeciduous className="h-4 w-4" />
-              </span>
-              <span className="text-sm font-bold text-[var(--jt-olive-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-                Juthoor
-              </span>
-            </Link>
-            <div className="flex items-center gap-5 overflow-x-auto text-sm text-[var(--jt-stone-600)]">
-              {FLOW_SECTIONS.map((s) => (
-                <a key={s.ref} href={`#${s.ref}`} className="shrink-0 whitespace-nowrap hover:text-[var(--jt-olive-700)]">
-                  {s.title}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
       </header>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-screen-2xl px-5 py-14 md:py-20">
-        <div className="grid items-center gap-10 md:grid-cols-2">
-          <div className="order-2 flex justify-center md:order-1">
-            <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--jt-olive-50)] shadow-[var(--jt-shadow-md)]">
-              <Image
-                src="/images/hero-key.jpg"
-                alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
-                fill
-                sizes="(max-width: 768px) 90vw, 400px"
-                className="object-cover"
-                priority
-              />
-            </div>
-          </div>
-
-          <div className="order-1 md:order-2">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-              Non-profit · Free forever · No ads
-            </p>
-            <h1
-              className="text-[clamp(2rem,5vw,3.4rem)] font-bold leading-tight text-[var(--jt-olive-900)]"
-              style={{ fontFamily: 'var(--jt-font-display)' }}
-            >
-              One family tree for every Palestinian, everywhere.
-            </h1>
-            <p className="mt-4 max-w-lg text-[var(--jt-stone-700)]">
-              Every family recorded is a family remembered. Search for your relatives, build your
-              tree, and reconnect it to the wider Palestinian Family Tree — one household, one
-              village, one generation at a time.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center gap-2 rounded-full bg-[var(--jt-olive-600)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-colors hover:bg-[var(--jt-olive-700)]"
+      <div className="mx-auto max-w-screen-2xl px-5 py-10 lg:flex lg:items-start lg:gap-10">
+        {/* Sidebar — the four narrative-flow anchors, alongside the content instead of above it */}
+        <aside className="mb-8 lg:sticky lg:top-20 lg:mb-0 lg:w-56 lg:shrink-0">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-600)]">
+            On this page
+          </p>
+          <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
+            {FLOW_SECTIONS.map((s) => (
+              <a
+                key={s.ref}
+                href={`#${s.ref}`}
+                className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-[var(--jt-stone-700)] transition-colors hover:bg-[var(--jt-olive-50)] hover:text-[var(--jt-olive-700)] lg:whitespace-normal"
               >
-                Start your tree
-              </Link>
-              <Link
-                href="/search"
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-300)] px-6 py-3 text-sm font-semibold text-[var(--jt-olive-800)] transition-colors hover:bg-[var(--jt-olive-50)]"
-              >
-                Search for family
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+                <s.icon className="h-4 w-4 shrink-0 text-[var(--jt-olive-600)]" />
+                {s.title}
+              </a>
+            ))}
+          </nav>
+        </aside>
 
-      {/* Who We Are -> Why -> How -> Contact — one connected vertical flow, per the wireframe */}
-      <section className="mx-auto max-w-2xl px-5 pb-24">
-        <div className="flex flex-col">
-          {FLOW_SECTIONS.map((s, i) => (
-            <div key={s.ref} id={s.ref} className="scroll-mt-32">
-              <div className="flex gap-5">
-                <div className="flex flex-col items-center">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]">
-                    <s.icon className="h-5 w-5" />
-                  </span>
-                  {i < FLOW_SECTIONS.length - 1 && (
-                    <span aria-hidden className="my-1 w-px flex-1 bg-[var(--jt-olive-200)]" style={{ minHeight: 56 }} />
-                  )}
+        <div className="min-w-0 flex-1">
+          {/* Hero */}
+          <section className="py-4 md:py-8">
+            <div className="grid items-center gap-10 md:grid-cols-2">
+              <div className="order-2 flex justify-center md:order-1">
+                <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--jt-olive-50)] shadow-[var(--jt-shadow-md)]">
+                  <Image
+                    src="/images/hero-key.jpg"
+                    alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
+                    fill
+                    sizes="(max-width: 768px) 90vw, 400px"
+                    className="object-cover"
+                    priority
+                  />
                 </div>
-                <div className="pb-10">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-olive-600)]">
-                    {s.ref}
-                  </span>
-                  <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-                    {s.title}
-                  </h2>
-                  <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{s.body}</p>
+              </div>
+
+              <div className="order-1 md:order-2">
+                <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
+                  Non-profit · Free forever · No ads
+                </p>
+                <h1
+                  className="text-[clamp(2rem,5vw,3.4rem)] font-bold leading-tight text-[var(--jt-olive-900)]"
+                  style={{ fontFamily: 'var(--jt-font-display)' }}
+                >
+                  One family tree for all Palestinians, everywhere.
+                </h1>
+                <p className="mt-4 max-w-lg text-[var(--jt-stone-700)]">
+                  Every family recorded is a family remembered. Search for your relatives, build your
+                  tree, and reconnect it to the wider Palestinian Family Tree — one household, one
+                  village, one generation at a time.
+                </p>
+                <div className="mt-7 flex flex-wrap gap-3">
                   <Link
-                    href={s.href}
-                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--jt-olive-700)] hover:text-[var(--jt-olive-900)]"
+                    href="/sign-up"
+                    className="inline-flex items-center gap-2 rounded-full bg-[var(--jt-olive-600)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-colors hover:bg-[var(--jt-olive-700)]"
                   >
-                    Learn more →
+                    Start your tree
+                  </Link>
+                  <Link
+                    href="/search"
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-300)] px-6 py-3 text-sm font-semibold text-[var(--jt-olive-800)] transition-colors hover:bg-[var(--jt-olive-50)]"
+                  >
+                    Search for family
                   </Link>
                 </div>
               </div>
             </div>
-          ))}
+          </section>
+
+          {/* Who We Are -> Why -> How -> Contact — one connected vertical flow, per the wireframe */}
+          <section className="max-w-2xl pb-16 pt-6">
+            <div className="flex flex-col">
+              {FLOW_SECTIONS.map((s, i) => (
+                <div key={s.ref} id={s.ref} className="scroll-mt-24">
+                  <div className="flex gap-5">
+                    <div className="flex flex-col items-center">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]">
+                        <s.icon className="h-5 w-5" />
+                      </span>
+                      {i < FLOW_SECTIONS.length - 1 && (
+                        <span aria-hidden className="my-1 w-px flex-1 bg-[var(--jt-olive-200)]" style={{ minHeight: 56 }} />
+                      )}
+                    </div>
+                    <div className="pb-10">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-olive-600)]">
+                        {s.ref}
+                      </span>
+                      <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+                        {s.title}
+                      </h2>
+                      <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{s.body}</p>
+                      <Link
+                        href={s.href}
+                        className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--jt-olive-700)] hover:text-[var(--jt-olive-900)]"
+                      >
+                        Learn more →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-[var(--jt-stone-200)] bg-[var(--jt-stone-50)] px-5 py-8 text-center text-xs text-[var(--jt-stone-500)]">
