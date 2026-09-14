@@ -47,7 +47,6 @@ export async function updateSession(request: NextRequest) {
     '/contact',
     '/privacy',
     '/terms',
-    '/home-en',
     '/login',
     '/sign-up',
     '/forgot-password',

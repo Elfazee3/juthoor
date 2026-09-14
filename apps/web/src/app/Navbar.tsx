@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { LocaleToggle } from '@/components/LocaleToggle';
 import { MobileNavigation } from '@/app/MobileNavigation';
+import { NAV_ITEMS } from '@/app/nav-items';
 import { useLocale } from '@/contexts/LocaleContext';
 
 const NAV_LINK_CLS =
-  'relative py-1 transition-colors hover:text-[var(--jt-olive-700)] after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-center after:scale-x-0 after:rounded-full after:bg-[var(--jt-gold-400)] after:transition-transform after:duration-300 hover:after:scale-x-100';
+  'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium text-[var(--jt-stone-600)] transition-colors hover:bg-[var(--jt-olive-50)] hover:text-[var(--jt-olive-700)]';
 
 export default function Navbar() {
   const { t } = useLocale();
@@ -50,35 +50,38 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="mx-auto hidden items-center gap-8 text-sm font-medium text-[var(--jt-stone-600)] md:flex">
-          <Link href="/" className={NAV_LINK_CLS}>
-            {t('الصفحة الرئيسية', 'Home')}
-          </Link>
-          <Link href="/tree" className={NAV_LINK_CLS}>
-            {t('شجرة العائلة', 'Family Tree')}
-          </Link>
-          <Link href="/search" className={NAV_LINK_CLS}>
-            {t('ابحث عن ذويك', 'Find family')}
-          </Link>
-          <Link href="/about" className={NAV_LINK_CLS}>
-            {t('عن جذور', 'About')}
-          </Link>
+        <nav className="mx-4 hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.en}
+              href={item.available ? item.href : '#'}
+              aria-disabled={!item.available}
+              className={item.available ? NAV_LINK_CLS : `${NAV_LINK_CLS} cursor-default text-[var(--jt-stone-400)] hover:bg-transparent hover:text-[var(--jt-stone-400)]`}
+              onClick={(e) => {
+                if (!item.available) e.preventDefault();
+              }}
+            >
+              {item.icon && <item.icon className="h-4 w-4" />}
+              {t(item.ar, item.en)}
+              {!item.available && (
+                <span className="rounded-full bg-[var(--jt-stone-100)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--jt-stone-500)]">
+                  {t('قريبًا', 'Soon')}
+                </span>
+              )}
+            </Link>
+          ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
+        <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <MobileNavigation />
           <LocaleToggle />
           <ModeToggle />
-          <Button asChild variant="ghost" size="sm" className="hidden text-[var(--jt-stone-700)] hover:text-[var(--jt-olive-700)] sm:inline-flex">
-            <Link href="/login">{t('تسجيل الدخول', 'Sign in')}</Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="jt-btn-shine hidden bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)] sm:inline-flex"
+          <Link
+            href="/login"
+            className="jt-btn-shine hidden shrink-0 rounded-full bg-[var(--jt-gold-500)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)] sm:inline-flex"
           >
-            <Link href="/sign-up">{t('ابدأ شجرتك', 'Start your tree')}</Link>
-          </Button>
+            {t('تسجيل الدخول / التسجيل', 'Log In / Register')}
+          </Link>
         </div>
       </div>
     </header>
