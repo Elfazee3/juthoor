@@ -167,7 +167,7 @@ export function HomeEnClient() {
           </nav>
           <Link
             href="/login"
-            className="jt-btn-shine shrink-0 rounded-full bg-[var(--jt-olive-600)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)]"
+            className="jt-btn-shine shrink-0 rounded-full bg-[var(--jt-gold-500)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)]"
           >
             Log In / Register
           </Link>
@@ -226,26 +226,21 @@ export function HomeEnClient() {
                 <div
                   className="relative aspect-[4/5] w-full max-w-sm"
                   style={{
-                    WebkitMaskImage: 'radial-gradient(ellipse 68% 72% at 50% 46%, black 45%, transparent 92%)',
-                    maskImage: 'radial-gradient(ellipse 68% 72% at 50% 46%, black 45%, transparent 92%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 78% 82% at 50% 46%, black 20%, transparent 100%)',
+                    maskImage: 'radial-gradient(ellipse 78% 82% at 50% 46%, black 20%, transparent 100%)',
                   }}
                 >
+                  {/* mix-blend-mode: multiply drops the photo's light stone-wall background
+                      into the page's own tone, so only the darker hand+key silhouette reads —
+                      no visible rectangle/edge, unlike a plain opacity fade. */}
                   <Image
                     src="/images/hero-key.jpg"
                     alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
                     fill
                     sizes="(max-width: 768px) 90vw, 400px"
-                    className="object-cover grayscale"
+                    className="object-cover grayscale contrast-75 brightness-110"
+                    style={{ mixBlendMode: 'multiply' }}
                     priority
-                  />
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      background:
-                        'radial-gradient(ellipse 70% 70% at 50% 45%, transparent 40%, var(--jt-gold-100) 78%, var(--jt-olive-100) 100%)',
-                      mixBlendMode: 'multiply',
-                    }}
                   />
                 </div>
               </motion.div>
@@ -289,7 +284,7 @@ export function HomeEnClient() {
                 <motion.div variants={rise} className="mt-7 flex flex-wrap gap-3">
                   <Link
                     href="/sign-up"
-                    className="jt-btn-shine inline-flex items-center gap-2 rounded-full bg-[var(--jt-olive-600)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)]"
+                    className="jt-btn-shine inline-flex items-center gap-2 rounded-full bg-[var(--jt-gold-500)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)]"
                   >
                     Start your own family tree
                   </Link>
