@@ -16,18 +16,22 @@ import {
 } from 'lucide-react';
 
 /**
- * English homepage, structured after Appendix 2 ("Front-End GUI Design",
- * Module 2.0 — Home Page) of the platform's Functional Requirements
- * Specification: a six-item primary nav (Trees / Individuals / Families /
- * VCC / Picture Archive / Document Archive), Sign In / Register at top
- * right, and four homepage sections (2.1 Who We Are, 2.2 Why Are We Doing
- * This, 2.3 How Does This Work, 2.4 Contact Us).
+ * English homepage, structured after the platform's own hand-drawn Home
+ * Page wireframe ("1 E Home Page.pdf") and FRS Appendix 2 ("Front-End GUI
+ * Design", Module 2.0 — Home Page):
+ *
+ *  Bar 1: Home / Trees / Individuals / Families / VCC / Picture Archive /
+ *         Document Archive  ...............................  Log In / Register
+ *  Bar 2: [logo]  Who We Are | Why Are We Doing This | How Does This Work | Contact Us
+ *  Body:  Who We Are -> Why Are We Doing This -> How Does This Work -> Contact Us,
+ *         drawn in the wireframe as one connected vertical flow, not a card grid.
  *
  * Standalone preview at /home-en — deliberately not linked from the live
  * (Arabic-first) homepage or global nav; see chat for context.
  */
 
-const PRIMARY_NAV = [
+const MODULE_NAV = [
+  { label: 'Home', href: '/home-en', icon: null, available: true },
   { label: 'Trees', href: '/tree', icon: TreeDeciduous, available: true },
   { label: 'Individuals', href: '/search', icon: UserSearch, available: true },
   { label: 'Families', href: '/families', icon: Users, available: true },
@@ -36,7 +40,7 @@ const PRIMARY_NAV = [
   { label: 'Document Archive', href: '#', icon: FileText, available: false },
 ];
 
-const SECTIONS = [
+const FLOW_SECTIONS = [
   {
     ref: '2.1',
     icon: Info,
@@ -72,49 +76,14 @@ export function HomeEnClient() {
     <div dir="ltr" lang="en" className="min-h-screen bg-[var(--jt-stone-50)]" style={{ fontFamily: 'var(--jt-font-latin)' }}>
       {/* Preview notice */}
       <div className="bg-[var(--jt-olive-900)] px-4 py-2 text-center text-xs font-medium text-[var(--jt-olive-100)]">
-        English homepage preview — structured per FRS Appendix 2 · Module 2.0. Not linked from the live site.
+        English homepage preview — structured per the platform's Home Page wireframe and FRS Appendix 2 · Module 2.0. Not linked from the live site.
       </div>
 
-      {/* Top utility bar */}
-      <div className="border-b border-[var(--jt-stone-200)] bg-[var(--jt-olive-800)] px-5 py-2 text-[var(--jt-stone-50)]">
-        <div className="mx-auto flex max-w-screen-2xl items-center justify-between">
-          <span className="text-xs tracking-wide text-[var(--jt-olive-100)]">
-            Palestinian Roots Platform — one family tree for every Palestinian, everywhere.
-          </span>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="rounded-full border border-[var(--jt-olive-400)]/60 px-3 py-1 text-xs font-semibold transition-colors hover:bg-[var(--jt-olive-700)]"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/sign-up"
-              className="rounded-full bg-[var(--jt-gold-400)] px-3 py-1 text-xs font-bold text-[var(--jt-olive-900)] transition-colors hover:bg-[var(--jt-gold-300)]"
-            >
-              Register
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary nav */}
+      {/* Bar 1 — module nav + login */}
       <header className="sticky top-0 z-40 border-b border-[var(--jt-stone-200)] bg-[var(--background)]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-screen-2xl items-center gap-6 px-5">
-          <Link href="/home-en" className="flex items-center gap-2 shrink-0">
-            <span
-              aria-hidden
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]"
-            >
-              <TreeDeciduous className="h-5 w-5" />
-            </span>
-            <span className="text-lg font-bold text-[var(--jt-olive-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-              Juthoor
-            </span>
-          </Link>
-
-          <nav className="ms-2 flex flex-1 items-center gap-1 overflow-x-auto">
-            {PRIMARY_NAV.map((item) => (
+        <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-1 px-5">
+          <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
+            {MODULE_NAV.map((item) => (
               <Link
                 key={item.label}
                 href={item.available ? item.href : '#'}
@@ -128,7 +97,7 @@ export function HomeEnClient() {
                   if (!item.available) e.preventDefault();
                 }}
               >
-                <item.icon className="h-4 w-4" />
+                {item.icon && <item.icon className="h-4 w-4" />}
                 {item.label}
                 {!item.available && (
                   <span className="ms-1 rounded-full bg-[var(--jt-stone-100)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--jt-stone-500)]">
@@ -138,20 +107,35 @@ export function HomeEnClient() {
               </Link>
             ))}
           </nav>
+          <Link
+            href="/login"
+            className="shrink-0 rounded-full bg-[var(--jt-olive-600)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] transition-colors hover:bg-[var(--jt-olive-700)]"
+          >
+            Log In / Register
+          </Link>
+        </div>
 
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <Link
-              href="/login"
-              className="rounded-full px-4 py-2 text-sm font-semibold text-[var(--jt-olive-800)] hover:bg-[var(--jt-olive-50)]"
-            >
-              Sign In
+        {/* Bar 2 — brand + the four narrative-flow anchors */}
+        <div className="border-t border-[var(--jt-stone-100)] bg-[var(--jt-olive-50)]/60">
+          <div className="mx-auto flex h-12 max-w-screen-2xl items-center gap-6 px-5">
+            <Link href="/home-en" className="flex shrink-0 items-center gap-2">
+              <span
+                aria-hidden
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]"
+              >
+                <TreeDeciduous className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-bold text-[var(--jt-olive-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+                Juthoor
+              </span>
             </Link>
-            <Link
-              href="/sign-up"
-              className="rounded-full bg-[var(--jt-olive-600)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] transition-colors hover:bg-[var(--jt-olive-700)]"
-            >
-              Register
-            </Link>
+            <div className="flex items-center gap-5 overflow-x-auto text-sm text-[var(--jt-stone-600)]">
+              {FLOW_SECTIONS.map((s) => (
+                <a key={s.ref} href={`#${s.ref}`} className="shrink-0 whitespace-nowrap hover:text-[var(--jt-olive-700)]">
+                  {s.title}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -162,7 +146,7 @@ export function HomeEnClient() {
           <div className="order-2 flex justify-center md:order-1">
             <div className="relative aspect-[4/5] w-full max-w-sm overflow-hidden rounded-3xl bg-[var(--jt-olive-50)] shadow-[var(--jt-shadow-md)]">
               <Image
-                src="/images/hero-key-placeholder.svg"
+                src="/images/hero-key.jpg"
                 alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
                 fill
                 sizes="(max-width: 768px) 90vw, 400px"
@@ -205,26 +189,37 @@ export function HomeEnClient() {
         </div>
       </section>
 
-      {/* 2.1–2.4 sections */}
-      <section className="mx-auto max-w-screen-2xl px-5 pb-20">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {SECTIONS.map((s) => (
-            <Link
-              key={s.ref}
-              href={s.href}
-              className="group flex flex-col rounded-2xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-6 transition-all hover:-translate-y-1 hover:border-[var(--jt-olive-300)] hover:shadow-[var(--jt-shadow-md)]"
-            >
-              <span className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--jt-olive-50)] text-[var(--jt-olive-700)]">
-                <s.icon className="h-5 w-5" />
-              </span>
-              <span className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-olive-600)]">
-                {s.ref}
-              </span>
-              <h2 className="mb-2 text-lg font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-                {s.title}
-              </h2>
-              <p className="text-sm text-[var(--jt-stone-600)]">{s.body}</p>
-            </Link>
+      {/* Who We Are -> Why -> How -> Contact — one connected vertical flow, per the wireframe */}
+      <section className="mx-auto max-w-2xl px-5 pb-24">
+        <div className="flex flex-col">
+          {FLOW_SECTIONS.map((s, i) => (
+            <div key={s.ref} id={s.ref} className="scroll-mt-32">
+              <div className="flex gap-5">
+                <div className="flex flex-col items-center">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)]">
+                    <s.icon className="h-5 w-5" />
+                  </span>
+                  {i < FLOW_SECTIONS.length - 1 && (
+                    <span aria-hidden className="my-1 w-px flex-1 bg-[var(--jt-olive-200)]" style={{ minHeight: 56 }} />
+                  )}
+                </div>
+                <div className="pb-10">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--jt-olive-600)]">
+                    {s.ref}
+                  </span>
+                  <h2 className="mt-1 text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+                    {s.title}
+                  </h2>
+                  <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{s.body}</p>
+                  <Link
+                    href={s.href}
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--jt-olive-700)] hover:text-[var(--jt-olive-900)]"
+                  >
+                    Learn more →
+                  </Link>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
