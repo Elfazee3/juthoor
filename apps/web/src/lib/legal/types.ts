@@ -1,13 +1,14 @@
 /**
  * Shared types for rendering legal documents (Privacy Policy, Terms & Conditions).
  *
- * The authoritative source text we currently hold is English. Per the documents
- * themselves, the Arabic version is the official one and prevails in any conflict —
- * so each block carries an optional `ar` that, when present, is shown in Arabic
- * locale. Until the partner's reviewed Arabic text is supplied, bodies fall back to
- * English with a visible notice (see {@link LegalDocument}). Titles and the
- * non-binding plain-language summaries are translated up front because they are safe
- * to localise.
+ * The documents were originally drafted in English. Per the documents themselves,
+ * the Arabic version is the official one and prevails in any conflict — so each
+ * block carries an optional `ar` that, when present, is shown in Arabic locale.
+ * Both privacyContent.ts and termsContent.ts now carry a full draft Arabic
+ * translation for every block, but it is a draft pending legal/native-reviewer
+ * sign-off before it is treated as the binding text (see the "under legal
+ * review" notice in {@link LegalDocumentView}). A block without `ar` falls back
+ * to English with `dir="ltr"` so punctuation renders correctly inside an RTL page.
  */
 
 export type LegalBlock =
