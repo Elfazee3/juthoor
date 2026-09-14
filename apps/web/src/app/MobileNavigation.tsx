@@ -114,7 +114,7 @@ export function MobileNavigation() {
                   onClick={() => setIsOpen(false)}
                   className="jt-btn-shine inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--jt-gold-500)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_var(--jt-gold-500)] transition-all duration-300 hover:bg-[var(--jt-gold-600)]"
                 >
-                  {t('تسجيل الدخول / التسجيل', 'Log In / Register')}
+                  {t('تسجيل الدخول', 'Log In / Register')}
                 </Link>
               </motion.div>
             </Dialog.Panel>

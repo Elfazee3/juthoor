@@ -50,7 +50,7 @@ const FLOW_SECTIONS = [
   {
     ref: '2.1',
     icon: Info,
-    titleAr: 'من نحن',
+    titleAr: 'هويتنا',
     titleEn: 'Who We Are',
     bodyAr: 'منصّة غير ربحية بناها المجتمع، تربط 15.2 مليون فلسطيني حول العالم عبر شجرة عائلة واحدة موحّدة.',
     bodyEn: 'A non-profit, community-built platform connecting the 15.2 million Palestinians scattered across the world through one unified family tree.',
@@ -59,7 +59,7 @@ const FLOW_SECTIONS = [
   {
     ref: '2.2',
     icon: Heart,
-    titleAr: 'لماذا نفعل هذا',
+    titleAr: 'أهدافنا',
     titleEn: 'Why Are We Doing This',
     bodyAr: 'الهوية، وحقّ العودة، ولماذا توثيق تاريخ العائلة مهمّ الآن أكثر من أي وقت مضى.',
     bodyEn: 'Identity, the right of return, and why documenting family history matters now more than ever.',
@@ -68,7 +68,7 @@ const FLOW_SECTIONS = [
   {
     ref: '2.3',
     icon: RouteIcon,
-    titleAr: 'كيف يعمل هذا',
+    titleAr: 'كيف نحقق أهدافنا',
     titleEn: 'How Does This Work',
     bodyAr: 'بناء شجرتك، والخصوصية وضوابط الوصول، وكيف ترتبط الأشجار الفردية بشجرة العائلة الفلسطينية.',
     bodyEn: 'Building your tree, privacy and access controls, and how individual trees link into the Palestinian Family Tree.',
@@ -200,7 +200,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
                   <Image
                     src="/images/hero-key.jpg"
                     alt={t(
-                      'يد جدّ ويد حفيد تمسكان معًا مفتاحًا حديديًا قديمًا — مفتاح العودة',
+                      '',
                       "An elder's hand and a child's hand together holding an old iron key — the key of return",
                     )}
                     fill
@@ -215,7 +215,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
               <div className="order-1 md:order-2">
                 <motion.div variants={rise} className="mb-3 flex flex-col items-start gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                    {t('من الفلسطينيين، للفلسطينيين', 'By Palestinians, For Palestinians')}
+                    {t('من الفلسطينيين، عن الفلسطينيين، للفلسطينيين', 'By Palestinians, For Palestinians')}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
@@ -225,7 +225,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
                       {t('مجّانية للأبد', 'Free forever')}
                     </span>
                     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                      {t('بلا إعلانات', 'No ads')}
+                      {t('بدون إعلانات', 'No ads')}
                     </span>
                   </div>
                 </motion.div>
@@ -236,14 +236,14 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
                 >
                   {isAR ? (
                     <>
-                      شجرة عائلة واحدة لـ{' '}
+                      شجرة عائلة واحدة لـ
                       <span className="relative inline-block">
-                        كل الفلسطينيين
+                        جميع الفلسطينيين
                         <svg aria-hidden viewBox="0 0 220 10" preserveAspectRatio="none" className="absolute -bottom-1 right-0 h-2.5 w-full">
                           <path d="M4 7 Q 110 1 216 6" fill="none" stroke="var(--jt-gold-400)" strokeWidth="4" strokeLinecap="round" />
                         </svg>
-                      </span>
-                      ، في كل مكان.
+                      </span>{' '}
+                      في كل مكان.
                     </>
                   ) : (
                     <>
@@ -269,7 +269,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
                     href="/sign-up"
                     className="jt-btn-shine inline-flex items-center gap-2 rounded-full bg-[var(--jt-gold-500)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)]"
                   >
-                    {t('ابدأ شجرة عائلتك الخاصة', 'Start your own family tree')}
+                    {t('ابدأ بناء شجرة عائلتك', 'Start your own family tree')}
                   </Link>
                   <Link
                     href="/search"
@@ -396,7 +396,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
             </span>
             <p className="relative mx-auto mt-4 max-w-md text-lg text-[var(--jt-stone-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
               {t(
-                'قصّة عائلتك تنتمي إلى هنا. يستغرق البدء حوالي عشر دقائق.',
+                'لا يمكن لقصة عائلتك ان تنسى أو ان تمحى. لن يستغرق البدء ببناء شجرة عائلتك أكثر من عشر دقائق.',
                 "Your family's story belongs here. It takes about ten minutes to begin.",
               )}
             </p>
@@ -404,7 +404,7 @@ export function HomeClient({ villages = [] }: { villages?: Village[] }) {
               href="/sign-up"
               className="jt-btn-shine relative mt-5 inline-flex items-center gap-2.5 rounded-xl bg-[var(--jt-gold-500)] px-8 py-3.5 text-[15px] font-semibold text-white shadow-[0_14px_32px_-10px_var(--jt-gold-500)] transition-all duration-300 hover:-translate-y-1 hover:bg-[var(--jt-gold-600)] hover:shadow-[0_20px_40px_-10px_var(--jt-gold-600)] active:translate-y-0"
             >
-              {t('أنشئ شجرة عائلتك', 'Create your family tree')}
+              {t('ابدأ بناء شجرة عائلتك', 'Create your family tree')}
               <Arrow className="h-5 w-5" />
             </Link>
           </div>

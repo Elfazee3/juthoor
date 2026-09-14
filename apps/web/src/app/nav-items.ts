@@ -17,10 +17,10 @@ import {
  */
 export const NAV_ITEMS = [
   { href: '/', ar: 'الرئيسية', en: 'Home', icon: null, available: true },
-  { href: '/tree', ar: 'الشجرة', en: 'Trees', icon: TreeDeciduous, available: true },
-  { href: '/search', ar: 'الأفراد', en: 'Individuals', icon: UserSearch, available: true },
-  { href: '/families', ar: 'العائلات', en: 'Families', icon: Users, available: true },
-  { href: '/villages', ar: 'القرى والمدن', en: 'VCC', icon: MapPin, available: true },
+  { href: '/tree', ar: 'شجرة العائلة', en: 'Trees', icon: TreeDeciduous, available: true },
+  { href: '/search', ar: 'دليل الأفراد', en: 'Individuals', icon: UserSearch, available: true },
+  { href: '/families', ar: 'دليل العائلات', en: 'Families', icon: Users, available: true },
+  { href: '/villages', ar: 'دليل القرى و المدن', en: 'VCC', icon: MapPin, available: true },
   { href: '#', ar: 'أرشيف الصور', en: 'Picture Archive', icon: ImageIcon, available: false },
   { href: '#', ar: 'أرشيف الوثائق', en: 'Document Archive', icon: FileText, available: false },
 ];

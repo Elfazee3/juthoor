@@ -80,7 +80,7 @@ export default function Navbar() {
             href="/login"
             className="jt-btn-shine hidden shrink-0 rounded-full bg-[var(--jt-gold-500)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)] sm:inline-flex"
           >
-            {t('تسجيل الدخول / التسجيل', 'Log In / Register')}
+            {t('تسجيل الدخول', 'Log In / Register')}
           </Link>
         </div>
       </div>
