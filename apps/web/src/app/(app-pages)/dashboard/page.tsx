@@ -34,10 +34,9 @@ async function loadDashboard(): Promise<DashboardData> {
       .limit(9),
     supabase
       .from('events')
-      .select('place_id, places(name_ar, name_en, district_ar), persons!inner(tree_id)')
+      .select('place_id, persons!inner(tree_id)')
       .eq('persons.tree_id', treeId)
-      .not('place_id', 'is', null)
-      .limit(6),
+      .not('place_id', 'is', null),
     getTreeSnapshot(treeId).catch(() => null),
   ]);
 
