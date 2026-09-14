@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useLocale } from '@/contexts/LocaleContext';
 import { DiasporaConstellation } from '@/components/home/DiasporaConstellation';
 import { ScrollWords } from '@/components/about/ScrollWords';
-import { KeffiyehPattern } from '@/components/home/KeffiyehPattern';
+import { KeffiyehBand } from '@/components/home/KeffiyehPattern';
 import { SectionLabel } from '@/components/home/SectionLabel';
 import { CONTAINER, EASE_OUT, GRID, headingFont, type Village } from '@/components/home/homeContent';
 
@@ -32,9 +32,7 @@ export function DiasporaSection({ villages }: { villages: Village[] }) {
             <div className="relative h-64 md:h-80">
               <DiasporaConstellation className="h-full w-full" />
             </div>
-            <div aria-hidden className="h-6 border-t border-[var(--jt-stone-900)]/15 text-[var(--jt-stone-900)]/70">
-              <KeffiyehPattern variant="leaves" size={30} strokeWidth={1} />
-            </div>
+            <KeffiyehBand className="border-t border-[var(--jt-stone-900)]/15 text-black/85" height={30} />
           </div>
         </motion.div>
 
