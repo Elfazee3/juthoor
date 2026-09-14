@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
+  ArrowLeft,
+  ArrowRight,
   FileText,
   Heart,
   Image as ImageIcon,
@@ -15,10 +17,12 @@ import {
   Users,
   UserSearch,
 } from 'lucide-react';
+import { useLocale } from '@/contexts/LocaleContext';
+import { LocaleToggle } from '@/components/LocaleToggle';
 import { CountUp } from '@/components/home/CountUp';
 
 /**
- * English homepage, structured after the platform's own hand-drawn Home
+ * Bilingual homepage, structured after the platform's own hand-drawn Home
  * Page wireframe ("1 E Home Page.pdf") and FRS Appendix 2 ("Front-End GUI
  * Design", Module 2.0 — Home Page):
  *
@@ -28,21 +32,23 @@ import { CountUp } from '@/components/home/CountUp';
  *  Body:    Who We Are -> Why Are We Doing This -> How Does This Work -> Contact Us,
  *           drawn in the wireframe as one connected vertical flow, not a card grid.
  *
- * The wireframe's second nav bar is rendered here as a sticky sidebar
- * instead, per feedback — same four links, alongside the content rather
- * than stacked above it. Visual polish (gradients, motion, accent colors)
- * reuses the same jt-* utilities and framer-motion patterns as the live
- * Arabic homepage, so the two stay in the same design language.
+ * Uses the site's existing LocaleContext (useLocale/t) and LocaleToggle so it
+ * behaves like every other page — Arabic titles reuse the exact strings
+ * already established on /about, /why, /how, /contact for consistency.
+ *
+ * Standalone preview at /home-en — not yet linked from the live nav.
  */
 
-const MODULE_NAV = [
-  { label: 'Home', href: '/home-en', icon: null, available: true },
-  { label: 'Trees', href: '/tree', icon: TreeDeciduous, available: true },
-  { label: 'Individuals', href: '/search', icon: UserSearch, available: true },
-  { label: 'Families', href: '/families', icon: Users, available: true },
-  { label: 'VCC', href: '/villages', icon: MapPin, available: true },
-  { label: 'Picture Archive', href: '#', icon: ImageIcon, available: false },
-  { label: 'Document Archive', href: '#', icon: FileText, available: false },
+type NavItem = { labelAr: string; labelEn: string; href: string; icon: typeof TreeDeciduous | null; available: boolean };
+
+const MODULE_NAV: NavItem[] = [
+  { labelAr: 'الرئيسية', labelEn: 'Home', href: '/home-en', icon: null, available: true },
+  { labelAr: 'الشجرة', labelEn: 'Trees', href: '/tree', icon: TreeDeciduous, available: true },
+  { labelAr: 'الأفراد', labelEn: 'Individuals', href: '/search', icon: UserSearch, available: true },
+  { labelAr: 'العائلات', labelEn: 'Families', href: '/families', icon: Users, available: true },
+  { labelAr: 'القرى والمدن', labelEn: 'VCC', href: '/villages', icon: MapPin, available: true },
+  { labelAr: 'أرشيف الصور', labelEn: 'Picture Archive', href: '#', icon: ImageIcon, available: false },
+  { labelAr: 'أرشيف الوثائق', labelEn: 'Document Archive', href: '#', icon: FileText, available: false },
 ];
 
 type Accent = 'olive' | 'gold' | 'terra';
@@ -62,39 +68,62 @@ const FLOW_SECTIONS = [
   {
     ref: '2.1',
     icon: Info,
-    title: 'Who We Are',
-    body: 'A non-profit, community-built platform connecting the 15.2 million Palestinians scattered across the world through one unified family tree.',
+    titleAr: 'من نحن',
+    titleEn: 'Who We Are',
+    bodyAr: 'منصّة غير ربحية بناها المجتمع، تربط 15.2 مليون فلسطيني حول العالم عبر شجرة عائلة واحدة موحّدة.',
+    bodyEn: 'A non-profit, community-built platform connecting the 15.2 million Palestinians scattered across the world through one unified family tree.',
     href: '/about',
   },
   {
     ref: '2.2',
     icon: Heart,
-    title: 'Why Are We Doing This',
-    body: 'Identity, the right of return, and why documenting family history matters now more than ever.',
+    titleAr: 'لماذا نفعل هذا',
+    titleEn: 'Why Are We Doing This',
+    bodyAr: 'الهوية، وحقّ العودة، ولماذا توثيق تاريخ العائلة مهمّ الآن أكثر من أي وقت مضى.',
+    bodyEn: 'Identity, the right of return, and why documenting family history matters now more than ever.',
     href: '/why',
   },
   {
     ref: '2.3',
     icon: RouteIcon,
-    title: 'How Does This Work',
-    body: 'Building your tree, privacy and access controls, and how individual trees link into the Palestinian Family Tree.',
+    titleAr: 'كيف يعمل هذا',
+    titleEn: 'How Does This Work',
+    bodyAr: 'بناء شجرتك، والخصوصية وضوابط الوصول، وكيف ترتبط الأشجار الفردية بشجرة العائلة الفلسطينية.',
+    bodyEn: 'Building your tree, privacy and access controls, and how individual trees link into the Palestinian Family Tree.',
     href: '/how',
   },
   {
     ref: '2.4',
     icon: Mail,
-    title: 'Contact Us',
-    body: 'Questions, partnerships, corrections, and support — reach the team behind the platform.',
+    titleAr: 'تواصل معنا',
+    titleEn: 'Contact Us',
+    bodyAr: 'أسئلة، شراكات، تصحيحات، ودعم — تواصل مع الفريق القائم على هذه المنصّة.',
+    bodyEn: 'Questions, partnerships, corrections, and support — reach the team behind the platform.',
     href: '/contact',
   },
 ];
 
 const STATS = [
-  { value: 15.2, decimals: 1, suffix: 'M', label: 'Palestinians in the diaspora' },
-  { value: 530, decimals: 0, suffix: '+', label: 'Palestinian villages completely demolished by Israel in 1948' },
+  {
+    value: 15.2,
+    decimals: 1,
+    suffix: 'M',
+    labelAr: 'فلسطيني في الشتات',
+    labelEn: 'Palestinians in the diaspora',
+  },
+  {
+    value: 530,
+    decimals: 0,
+    suffix: '+',
+    labelAr: 'قرية فلسطينية دُمِّرت بالكامل على يد إسرائيل عام 1948',
+    labelEn: 'Palestinian villages completely demolished by Israel in 1948',
+  },
 ];
 
 export function HomeEnClient() {
+  const { t, locale, dir } = useLocale();
+  const isAR = locale === 'ar';
+  const Arrow = isAR ? ArrowLeft : ArrowRight;
   const reduce = useReducedMotion();
 
   const rise: Variants = reduce
@@ -106,7 +135,12 @@ export function HomeEnClient() {
   const stagger: Variants = { hidden: {}, show: { transition: { staggerChildren: reduce ? 0 : 0.09 } } };
 
   return (
-    <div dir="ltr" lang="en" className="relative min-h-screen bg-[var(--jt-stone-50)]" style={{ fontFamily: 'var(--jt-font-latin)' }}>
+    <div
+      dir={dir}
+      lang={locale}
+      className="relative min-h-screen bg-[var(--jt-stone-50)]"
+      style={{ fontFamily: isAR ? 'var(--jt-font-arabic)' : 'var(--jt-font-latin)' }}
+    >
       {/* decorative background wash */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(circle_at_top,_var(--jt-olive-100)_0%,_transparent_60%)] opacity-70" />
@@ -115,7 +149,10 @@ export function HomeEnClient() {
 
       {/* Preview notice */}
       <div className="bg-[var(--jt-olive-900)] px-4 py-2 text-center text-xs font-medium text-[var(--jt-olive-100)]">
-        English homepage preview — structured per the platform's Home Page wireframe and FRS Appendix 2 · Module 2.0. Not linked from the live site.
+        {t(
+          'معاينة الصفحة الرئيسية — مبنية وفق مخطّط الصفحة الرئيسية للمنصّة والملحق 2 من وثيقة المتطلّبات · الوحدة 2.0. غير مرتبطة بالموقع الحالي بعد.',
+          "Homepage preview — structured per the platform's Home Page wireframe and FRS Appendix 2 · Module 2.0. Not yet linked from the live site.",
+        )}
       </div>
 
       {/* Top bar — module nav + login */}
@@ -143,7 +180,7 @@ export function HomeEnClient() {
           <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
             {MODULE_NAV.map((item) => (
               <Link
-                key={item.label}
+                key={item.labelEn}
                 href={item.available ? item.href : '#'}
                 aria-disabled={!item.available}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -156,20 +193,21 @@ export function HomeEnClient() {
                 }}
               >
                 {item.icon && <item.icon className="h-4 w-4" />}
-                {item.label}
+                {t(item.labelAr, item.labelEn)}
                 {!item.available && (
                   <span className="ms-1 rounded-full bg-[var(--jt-stone-100)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--jt-stone-500)]">
-                    Soon
+                    {t('قريبًا', 'Soon')}
                   </span>
                 )}
               </Link>
             ))}
           </nav>
+          <LocaleToggle className="me-2 hidden sm:inline-flex" />
           <Link
             href="/login"
             className="jt-btn-shine shrink-0 rounded-full bg-[var(--jt-gold-500)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)]"
           >
-            Log In / Register
+            {t('تسجيل الدخول / التسجيل', 'Log In / Register')}
           </Link>
         </div>
       </header>
@@ -178,8 +216,14 @@ export function HomeEnClient() {
         {/* Sidebar — the four narrative-flow anchors, alongside the content instead of above it */}
         <aside className="mb-8 lg:sticky lg:top-20 lg:mb-0 lg:w-60 lg:shrink-0">
           <div className="rounded-2xl border border-[var(--jt-stone-200)]/70 bg-[var(--card)]/80 p-3 shadow-[var(--jt-shadow-sm)] backdrop-blur-sm lg:p-4">
-            <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-600)]">
-              On this page
+            <div className="mb-2 flex items-center justify-between px-1 sm:hidden">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-600)]">
+                {t('في هذه الصفحة', 'On this page')}
+              </p>
+              <LocaleToggle />
+            </div>
+            <p className="mb-2 hidden px-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-600)] sm:block">
+              {t('في هذه الصفحة', 'On this page')}
             </p>
             <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
               {FLOW_SECTIONS.map((s, i) => {
@@ -193,7 +237,7 @@ export function HomeEnClient() {
                     <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-transform group-hover:scale-110 ${ACCENT_SOFT[accent]}`}>
                       <s.icon className="h-3.5 w-3.5" />
                     </span>
-                    {s.title}
+                    {t(s.titleAr, s.titleEn)}
                   </a>
                 );
               })}
@@ -235,7 +279,10 @@ export function HomeEnClient() {
                       no visible rectangle/edge, unlike a plain opacity fade. */}
                   <Image
                     src="/images/hero-key.jpg"
-                    alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
+                    alt={t(
+                      'يد جدّ ويد حفيد تمسكان معًا مفتاحًا حديديًا قديمًا — مفتاح العودة',
+                      "An elder's hand and a child's hand together holding an old iron key — the key of return",
+                    )}
                     fill
                     sizes="(max-width: 768px) 90vw, 400px"
                     className="object-cover grayscale contrast-75 brightness-110"
@@ -248,17 +295,17 @@ export function HomeEnClient() {
               <div className="order-1 md:order-2">
                 <motion.div variants={rise} className="mb-3 flex flex-col items-start gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                    By Palestinians, For Palestinians
+                    {t('من الفلسطينيين، للفلسطينيين', 'By Palestinians, For Palestinians')}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                      Non-profit
+                      {t('غير ربحيّة', 'Non-profit')}
                     </span>
                     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                      Free forever
+                      {t('مجّانية للأبد', 'Free forever')}
                     </span>
                     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-200)] bg-[var(--jt-olive-50)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-olive-700)]">
-                      No ads
+                      {t('بلا إعلانات', 'No ads')}
                     </span>
                   </div>
                 </motion.div>
@@ -267,45 +314,61 @@ export function HomeEnClient() {
                   className="text-[clamp(2rem,5vw,3.4rem)] font-bold leading-tight text-[var(--jt-olive-900)]"
                   style={{ fontFamily: 'var(--jt-font-display)' }}
                 >
-                  One family tree for{' '}
-                  <span className="relative inline-block">
-                    all Palestinians
-                    <svg aria-hidden viewBox="0 0 220 10" preserveAspectRatio="none" className="absolute -bottom-1 left-0 h-2.5 w-full">
-                      <path d="M4 7 Q 110 1 216 6" fill="none" stroke="var(--jt-gold-400)" strokeWidth="4" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                  , everywhere.
+                  {isAR ? (
+                    <>
+                      شجرة عائلة واحدة لـ{' '}
+                      <span className="relative inline-block">
+                        كل الفلسطينيين
+                        <svg aria-hidden viewBox="0 0 220 10" preserveAspectRatio="none" className="absolute -bottom-1 right-0 h-2.5 w-full">
+                          <path d="M4 7 Q 110 1 216 6" fill="none" stroke="var(--jt-gold-400)" strokeWidth="4" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                      ، في كل مكان.
+                    </>
+                  ) : (
+                    <>
+                      One family tree for{' '}
+                      <span className="relative inline-block">
+                        all Palestinians
+                        <svg aria-hidden viewBox="0 0 220 10" preserveAspectRatio="none" className="absolute -bottom-1 left-0 h-2.5 w-full">
+                          <path d="M4 7 Q 110 1 216 6" fill="none" stroke="var(--jt-gold-400)" strokeWidth="4" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                      , everywhere.
+                    </>
+                  )}
                 </motion.h1>
                 <motion.p variants={rise} className="mt-5 max-w-lg text-[var(--jt-stone-700)]">
-                  Every family recorded is a family remembered. Search for your relatives, build your
-                  tree, and reconnect it to the wider Palestinian Family Tree — one household, one
-                  village, one generation at a time.
+                  {t(
+                    'كل عائلة تُسجَّل هي عائلة تُذكر. ابحث عن أقاربك، وابنِ شجرتك، وأعد ربطها بشجرة العائلة الفلسطينية الأوسع — بيتًا بيتًا، وقريةً قريةً، وجيلًا بعد جيل.',
+                    'Every family recorded is a family remembered. Search for your relatives, build your tree, and reconnect it to the wider Palestinian Family Tree — one household, one village, one generation at a time.',
+                  )}
                 </motion.p>
                 <motion.div variants={rise} className="mt-7 flex flex-wrap gap-3">
                   <Link
                     href="/sign-up"
                     className="jt-btn-shine inline-flex items-center gap-2 rounded-full bg-[var(--jt-gold-500)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)]"
                   >
-                    Start your own family tree
+                    {t('ابدأ شجرة عائلتك الخاصة', 'Start your own family tree')}
                   </Link>
                   <Link
                     href="/search"
                     className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-300)] px-6 py-3 text-sm font-semibold text-[var(--jt-olive-800)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-olive-50)]"
                   >
-                    Search the Palestinian Family Tree
+                    {t('ابحث في شجرة العائلة الفلسطينية', 'Search the Palestinian Family Tree')}
                   </Link>
                 </motion.div>
 
                 <motion.div variants={rise} className="mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t border-[var(--jt-olive-100)] pt-6">
                   {STATS.map((s) => (
-                    <div key={s.label}>
+                    <div key={s.labelEn}>
                       <div
                         className="text-3xl italic text-[var(--jt-olive-800)] md:text-4xl"
                         style={{ fontFamily: 'var(--jt-font-display)', fontWeight: 500 }}
                       >
                         <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix} />
                       </div>
-                      <div className="mt-0.5 text-xs text-[var(--jt-stone-600)]">{s.label}</div>
+                      <div className="mt-0.5 max-w-[16rem] text-xs text-[var(--jt-stone-600)]">{t(s.labelAr, s.labelEn)}</div>
                     </div>
                   ))}
                 </motion.div>
@@ -339,14 +402,15 @@ export function HomeEnClient() {
                       </div>
                       <div className="group -mt-1 flex-1 rounded-2xl p-4 pb-9 transition-colors hover:bg-[var(--jt-olive-50)]/50">
                         <h2 className="text-xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-                          {s.title}
+                          {t(s.titleAr, s.titleEn)}
                         </h2>
-                        <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{s.body}</p>
+                        <p className="mt-2 text-sm text-[var(--jt-stone-700)]">{t(s.bodyAr, s.bodyEn)}</p>
                         <Link
                           href={s.href}
                           className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--jt-olive-700)] transition-transform group-hover:gap-2 hover:text-[var(--jt-olive-900)]"
                         >
-                          Learn more →
+                          {t('اقرأ المزيد', 'Learn more')}
+                          <Arrow className="h-3.5 w-3.5" />
                         </Link>
                       </div>
                     </div>
@@ -368,9 +432,9 @@ export function HomeEnClient() {
               'linear-gradient(to right, transparent, var(--jt-olive-400), var(--jt-gold-400), var(--jt-terra-400), transparent)',
           }}
         />
-        Palestinian Roots Platform (Juthoor) — English homepage preview.{' '}
+        {t('منصّة جذور الفلسطينية — معاينة الصفحة الرئيسية.', 'Palestinian Roots Platform (Juthoor) — homepage preview.')}{' '}
         <Link href="/" className="underline hover:text-[var(--jt-olive-700)]">
-          Back to the live site
+          {t('العودة إلى الموقع الحالي', 'Back to the live site')}
         </Link>
       </footer>
     </div>
