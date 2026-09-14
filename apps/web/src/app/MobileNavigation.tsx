@@ -4,15 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Dialog } from '@headlessui/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Menu, Sprout, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
+import { NAV_ITEMS } from '@/app/nav-items';
 
-const LINKS = [
-  { href: '/', ar: 'الصفحة الرئيسية', en: 'Home' },
-  { href: '/tree', ar: 'شجرة العائلة', en: 'Family Tree' },
-  { href: '/search', ar: 'ابحث عن ذويك', en: 'Find family' },
-  { href: '/about', ar: 'عن جذور', en: 'About' },
-];
+const LINKS = NAV_ITEMS;
 
 /** Slide-in mobile menu (hamburger) — mirrors the desktop navbar links. */
 export function MobileNavigation() {
@@ -78,22 +74,30 @@ export function MobileNavigation() {
               <nav className="relative mt-8 flex flex-col gap-1">
                 {LINKS.map((l, i) => (
                   <motion.div
-                    key={l.href}
+                    key={l.en}
                     initial={reduce ? { opacity: 0 } : { opacity: 0, x: dir === 'rtl' ? 16 : -16 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.35, delay: 0.08 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <Link
-                      href={l.href}
-                      onClick={() => setIsOpen(false)}
-                      className="group flex items-center gap-3 rounded-xl px-3 py-3 text-lg font-semibold text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+                      href={l.available ? l.href : '#'}
+                      aria-disabled={!l.available}
+                      onClick={(e) => {
+                        if (!l.available) e.preventDefault();
+                        else setIsOpen(false);
+                      }}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-lg font-semibold transition-colors ${
+                        l.available ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'cursor-default text-white/40'
+                      }`}
                       style={{ fontFamily: 'var(--jt-font-display)' }}
                     >
-                      <span
-                        aria-hidden
-                        className="h-1.5 w-1.5 rounded-full bg-[var(--jt-gold-400)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                      />
+                      {l.icon && <l.icon className="h-4 w-4" />}
                       {t(l.ar, l.en)}
+                      {!l.available && (
+                        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+                          {t('قريبًا', 'Soon')}
+                        </span>
+                      )}
                     </Link>
                   </motion.div>
                 ))}
@@ -103,22 +107,14 @@ export function MobileNavigation() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.35 }}
-                className="relative mt-auto flex flex-col gap-3 border-t border-white/15 pt-6"
+                className="relative mt-auto border-t border-white/15 pt-6"
               >
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/30 px-5 py-2.5 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10"
+                  className="jt-btn-shine inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--jt-gold-500)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_var(--jt-gold-500)] transition-all duration-300 hover:bg-[var(--jt-gold-600)]"
                 >
-                  {t('تسجيل الدخول', 'Sign in')}
-                </Link>
-                <Link
-                  href="/sign-up"
-                  onClick={() => setIsOpen(false)}
-                  className="jt-btn-shine inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--jt-terra-500)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-10px_var(--jt-terra-500)] transition-all duration-300 hover:bg-[var(--jt-terra-600)]"
-                >
-                  <Sprout className="h-4 w-4" />
-                  {t('ابدأ شجرتك', 'Start your tree')}
+                  {t('تسجيل الدخول', 'Log In / Register')}
                 </Link>
               </motion.div>
             </Dialog.Panel>
