@@ -13,6 +13,7 @@ import {
   Mail,
   MapPin,
   Route as RouteIcon,
+  Sprout,
   TreeDeciduous,
   Users,
   UserSearch,
@@ -20,6 +21,8 @@ import {
 import { useLocale } from '@/contexts/LocaleContext';
 import { LocaleToggle } from '@/components/LocaleToggle';
 import { CountUp } from '@/components/home/CountUp';
+import { DiasporaConstellation } from '@/components/home/DiasporaConstellation';
+import { ScrollWords } from '@/components/about/ScrollWords';
 
 /**
  * Bilingual homepage, structured after the platform's own hand-drawn Home
@@ -120,8 +123,22 @@ const STATS = [
   },
 ];
 
-export function HomeEnClient() {
+type Village = { id: string; name_ar: string; name_en: string | null; district_ar: string | null };
+
+const FALLBACK_VILLAGES: Village[] = [
+  { id: '1', name_ar: 'اللد', name_en: 'Lydda', district_ar: 'الرملة' },
+  { id: '2', name_ar: 'يافا', name_en: 'Jaffa', district_ar: 'يافا' },
+  { id: '3', name_ar: 'حيفا', name_en: 'Haifa', district_ar: 'حيفا' },
+  { id: '4', name_ar: 'صفد', name_en: 'Safad', district_ar: 'صفد' },
+  { id: '5', name_ar: 'الطنطورة', name_en: 'Al-Tantura', district_ar: 'حيفا' },
+  { id: '6', name_ar: 'دير ياسين', name_en: 'Deir Yassin', district_ar: 'القدس' },
+  { id: '7', name_ar: 'عكا', name_en: 'Acre', district_ar: 'عكا' },
+  { id: '8', name_ar: 'بيسان', name_en: 'Beisan', district_ar: 'بيسان' },
+];
+
+export function HomeEnClient({ villages = [] }: { villages?: Village[] }) {
   const { t, locale, dir } = useLocale();
+  const names = (villages.length >= 6 ? villages : FALLBACK_VILLAGES).slice(0, 7);
   const isAR = locale === 'ar';
   const Arrow = isAR ? ArrowLeft : ArrowRight;
   const reduce = useReducedMotion();
@@ -376,6 +393,44 @@ export function HomeEnClient() {
             </div>
           </motion.section>
 
+          {/* Diaspora map — ported from the live homepage so this design carries the same content */}
+          <motion.section
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6 }}
+            className="mt-8 rounded-3xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-5 shadow-[var(--jt-shadow-sm)] md:p-6"
+          >
+            <div className="flex flex-col items-center gap-6 sm:flex-row">
+              <div className="relative h-36 w-full flex-1 overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--jt-stone-100)] via-[var(--jt-stone-50)] to-[var(--jt-olive-50)] sm:h-44">
+                <DiasporaConstellation className="h-full w-full" />
+              </div>
+              <div className="flex-1 text-[15px] text-[var(--jt-stone-600)]" style={{ lineHeight: 1.7 }}>
+                <span className="mb-1.5 block text-lg font-semibold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+                  {t('من حيفا إلى سانتياغو.', 'From Haifa to Santiago.')}
+                </span>
+                <ScrollWords
+                  text={t(
+                    'كلّ نقطة عائلة موثّقة. العائلات من القرية نفسها تتناثر في عشرات الدول — وهنا يصبح هذا التشتّت مرئيًّا في مكان واحد لأول مرّة.',
+                    'Every dot is a documented family. Families from one village scatter across dozens of countries — here that scatter becomes visible in one place for the first time.',
+                  )}
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-[var(--jt-stone-200)]/60 pt-4 text-xs text-[var(--jt-stone-500)]">
+              <span className="font-semibold uppercase tracking-[0.15em]">{t('قرى نحفظها:', 'Villages we remember:')}</span>
+              {names.map((v) => (
+                <span
+                  key={v.id}
+                  className="rounded-full bg-[var(--jt-olive-50)] px-2.5 py-1 font-medium text-[var(--jt-olive-700)]"
+                  style={{ fontFamily: 'var(--jt-font-display)' }}
+                >
+                  {t(v.name_ar, v.name_en ?? v.name_ar)}
+                </span>
+              ))}
+            </div>
+          </motion.section>
+
           {/* Who We Are -> Why -> How -> Contact — one connected vertical flow, per the wireframe */}
           <section className="max-w-2xl pb-16 pt-10">
             <div className="flex flex-col">
@@ -420,6 +475,52 @@ export function HomeEnClient() {
             </div>
           </section>
         </div>
+      </div>
+
+      {/* Footer CTA banner + village panorama — ported from the live homepage */}
+      <div className="mx-auto max-w-screen-2xl px-5 pb-12">
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.6 }}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--jt-terra-50)] via-[var(--jt-gold-50)] to-[var(--jt-olive-50)] text-center shadow-[var(--jt-shadow-sm)]"
+        >
+          <div aria-hidden className="jt-tatreez-dark absolute inset-0 opacity-[0.05]" />
+          <div className="relative px-6 pt-10 pb-2">
+            <span className="jt-float relative inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-white shadow-[var(--jt-shadow-md)]">
+              <Sprout className="h-5 w-5" />
+            </span>
+            <p className="relative mx-auto mt-4 max-w-md text-lg text-[var(--jt-stone-800)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
+              {t(
+                'قصّة عائلتك تنتمي إلى هنا. يستغرق البدء حوالي عشر دقائق.',
+                "Your family's story belongs here. It takes about ten minutes to begin.",
+              )}
+            </p>
+            <Link
+              href="/sign-up"
+              className="jt-btn-shine relative mt-5 inline-flex items-center gap-2.5 rounded-xl bg-[var(--jt-gold-500)] px-8 py-3.5 text-[15px] font-semibold text-white shadow-[0_14px_32px_-10px_var(--jt-gold-500)] transition-all duration-300 hover:-translate-y-1 hover:bg-[var(--jt-gold-600)] hover:shadow-[0_20px_40px_-10px_var(--jt-gold-600)] active:translate-y-0"
+            >
+              {t('أنشئ شجرة عائلتك', 'Create your family tree')}
+              <Arrow className="h-5 w-5" />
+            </Link>
+          </div>
+          {/* village horizon — generated artwork */}
+          <div className="relative mt-5 h-32 w-full sm:h-44">
+            <Image
+              src="/images/home/village-panorama.png"
+              alt=""
+              fill
+              sizes="(max-width: 1064px) 100vw, 1024px"
+              className="object-cover"
+              style={{ objectPosition: 'center 72%' }}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[var(--jt-gold-50)] to-transparent"
+            />
+          </div>
+        </motion.section>
       </div>
 
       {/* Footer */}
