@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useLocale } from '@/contexts/LocaleContext';
 import { OTP_LENGTH } from '@/lib/auth/otpConfig';
 
 export function Login({
@@ -29,6 +30,7 @@ export function Login({
   next?: string;
   nextActionType?: string;
 }) {
+  const { t, dir } = useLocale();
   const [redirectInProgress, setRedirectInProgress] = useState(false);
   const toastRef = useRef<string | number | undefined>(undefined);
 
@@ -54,10 +56,10 @@ export function Login({
     signInWithPasswordAction,
     {
       onExecute: () => {
-        toastRef.current = toast.loading('Logging in...');
+        toastRef.current = toast.loading(t('جارٍ تسجيل الدخول...', 'Logging in...'));
       },
       onSuccess: () => {
-        toast.success('Logged in!', {
+        toast.success(t('تم تسجيل الدخول!', 'Logged in!'), {
           id: toastRef.current,
         });
         toastRef.current = undefined;
@@ -68,7 +70,7 @@ export function Login({
         const errorMessage =
           error instanceof Error
             ? error.message
-            : `Sign in account failed ${String(error)}`;
+            : t(`فشل تسجيل الدخول ${String(error)}`, `Sign in account failed ${String(error)}`);
         toast.error(errorMessage, {
           id: toastRef.current,
         });
@@ -81,17 +83,17 @@ export function Login({
     signInWithProviderAction,
     {
       onExecute: () => {
-        toastRef.current = toast.loading('Requesting login...');
+        toastRef.current = toast.loading(t('جارٍ طلب تسجيل الدخول...', 'Requesting login...'));
       },
       onSuccess: (payload) => {
-        toast.success('Redirecting...', {
+        toast.success(t('جارٍ التحويل...', 'Redirecting...'), {
           id: toastRef.current,
         });
         toastRef.current = undefined;
         window.location.href = payload.data?.url || '/';
       },
       onError: () => {
-        toast.error('Failed to login', {
+        toast.error(t('فشل تسجيل الدخول', 'Failed to login'), {
           id: toastRef.current,
         });
         toastRef.current = undefined;
@@ -109,27 +111,29 @@ export function Login({
   }
 
   return (
-    <div className="container items-center text-left max-w-lg mx-auto overflow-auto min-h-[470px]">
+    <div dir={dir} className="container items-center text-left max-w-lg mx-auto overflow-auto min-h-[470px]">
       {redirectInProgress ? (
         <RedirectingPleaseWaitCard
-          message="Please wait while we redirect you to your dashboard."
-          heading="Redirecting to Dashboard"
+          message={t('انتظر بينما نحوّلك إلى لوحة التحكم.', 'Please wait while we redirect you to your dashboard.')}
+          heading={t('جارٍ التحويل إلى لوحة التحكم', 'Redirecting to Dashboard')}
         />
       ) : (
         <div className="space-y-8 bg-background p-6 rounded-lg shadow-sm dark:border">
           <Tabs defaultValue="password" className="md:min-w-[400px]">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="otp">OTP Code</TabsTrigger>
-              <TabsTrigger value="social-login">Social</TabsTrigger>
+              <TabsTrigger value="password">{t('كلمة السر', 'Password')}</TabsTrigger>
+              <TabsTrigger value="otp">{t('رمز التحقق', 'OTP Code')}</TabsTrigger>
+              <TabsTrigger value="social-login">{t('التواصل الاجتماعي', 'Social')}</TabsTrigger>
             </TabsList>
             <TabsContent value="otp">
               <Card className="border-none shadow-none">
                 <CardHeader className="py-6 px-0">
-                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
+                  <CardTitle>{t('تسجيل الدخول إلى جذور', 'Sign in to Juthoor')}</CardTitle>
                   <CardDescription>
-                    سنرسل رمزًا من {OTP_LENGTH} أرقام إلى بريدك. We&apos;ll
-                    email you an {OTP_LENGTH}-digit code.
+                    {t(
+                      `سنرسل رمزًا من ${OTP_LENGTH} أرقام إلى بريدك.`,
+                      `We'll email you an ${OTP_LENGTH}-digit code.`,
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 p-0">
@@ -140,9 +144,9 @@ export function Login({
             <TabsContent value="password">
               <Card className="border-none shadow-none">
                 <CardHeader className="py-6 px-0">
-                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
+                  <CardTitle>{t('تسجيل الدخول إلى جذور', 'Sign in to Juthoor')}</CardTitle>
                   <CardDescription>
-                    ادخل بحسابك الذي أنشأته لجذور. Login with your Juthoor account.
+                    {t('ادخل بحسابك الذي أنشأته لجذور.', 'Login with your Juthoor account.')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 p-0">
@@ -164,9 +168,9 @@ export function Login({
             <TabsContent value="social-login">
               <Card className="border-none shadow-none">
                 <CardHeader className="py-6 px-0">
-                  <CardTitle>تسجيل الدخول إلى جذور</CardTitle>
+                  <CardTitle>{t('تسجيل الدخول إلى جذور', 'Sign in to Juthoor')}</CardTitle>
                   <CardDescription>
-                    ادخل عبر حسابك على Google أو GitHub.
+                    {t('ادخل عبر حسابك على Google أو GitHub.', 'Sign in with your Google or GitHub account.')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 p-0">

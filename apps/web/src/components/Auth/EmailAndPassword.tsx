@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useLocale } from '@/contexts/LocaleContext';
 import { Lock, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -20,6 +21,7 @@ export const EmailAndPassword = ({
   view: 'sign-in' | 'sign-up';
   isLoading: boolean;
 } & ComponentProps<typeof Button>) => {
+  const { t } = useLocale();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
@@ -37,7 +39,7 @@ export const EmailAndPassword = ({
       <div className="space-y-4">
         <div>
           <Label htmlFor="email" className="text-foreground">
-            Email address
+            {t('البريد الإلكتروني', 'Email address')}
           </Label>
           <div className="mt-1">
             <InputGroup>
@@ -61,7 +63,7 @@ export const EmailAndPassword = ({
         </div>
         <div className="space-y-1">
           <Label htmlFor="password" className="text-foreground">
-            Password
+            {t('كلمة السر', 'Password')}
           </Label>
           <div className="mt-1">
             <InputGroup>
@@ -74,7 +76,7 @@ export const EmailAndPassword = ({
                 type="password"
                 disabled={isLoading}
                 value={password}
-                placeholder="Type your password"
+                placeholder={t('اكتب كلمة السر', 'Type your password')}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete={
                   view === 'sign-in' ? 'current-password' : 'new-password'
@@ -92,7 +94,7 @@ export const EmailAndPassword = ({
                 href="/forgot-password"
                 className="font-medium text-muted-foreground dark:hover:text-gray-600 hover:text-foreground"
               >
-                Forgot your password?
+                {t('نسيت كلمة السر؟', 'Forgot your password?')}
               </Link>
             </div>
           ) : null}
@@ -102,10 +104,10 @@ export const EmailAndPassword = ({
             {isLoading ? (
               <>
                 <Spinner className="h-4 w-4 mr-2" />
-                <span>Loading...</span>
+                <span>{t('جارٍ التحميل...', 'Loading...')}</span>
               </>
             ) : (
-              <span>{view === 'sign-in' ? 'Login' : 'Sign up'}</span>
+              <span>{view === 'sign-in' ? t('تسجيل الدخول', 'Login') : t('إنشاء حساب', 'Sign up')}</span>
             )}
           </Button>
           <div className="w-full text-center">
@@ -115,7 +117,7 @@ export const EmailAndPassword = ({
                   href="/sign-up"
                   className="font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Don't have an account? Sign up
+                  {t('ليس لديك حساب؟ أنشئ واحدًا', "Don't have an account? Sign up")}
                 </Link>
               </div>
             ) : (
@@ -124,7 +126,7 @@ export const EmailAndPassword = ({
                   href="/login"
                   className="font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Already have an account? Log in
+                  {t('لديك حساب؟ سجّل الدخول', 'Already have an account? Log in')}
                 </Link>
               </div>
             )}
