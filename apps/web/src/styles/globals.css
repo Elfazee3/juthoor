@@ -1,5 +1,5 @@
 /* Google Fonts — Arabic + Latin — must be first */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@300;400;500;600&family=Hanken+Grotesk:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import 'tailwindcss';
 
@@ -80,6 +80,9 @@
   /* ── Typography ── */
   --jt-font-arabic:  'Cairo', 'Noto Naskh Arabic', Tahoma, sans-serif;
   --jt-font-display: 'Amiri', 'Noto Naskh Arabic', serif;
+  --jt-font-display-latin: 'Hanken Grotesk', 'Inter', system-ui, sans-serif;
+  --jt-font-kufi:          'Noto Kufi Arabic', 'Cairo', 'Noto Naskh Arabic', sans-serif;
+  --jt-font-sans-latin:    'Hanken Grotesk', 'Inter', system-ui, sans-serif;
   --jt-font-latin:   'Inter', 'Helvetica Neue', system-ui, sans-serif;
   --jt-font-mono:    'JetBrains Mono', 'Fira Code', monospace;
 
@@ -373,5 +376,63 @@
   }
   .jt-btn-shine::after {
     display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   Homepage redesign helpers (keffiyeh / monochrome hero)
+   ═══════════════════════════════════════════════════ */
+
+/* Slow keffiyeh drift for full-cloth backgrounds */
+@keyframes jt-cloth-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-44px, -44px, 0); }
+}
+.jt-cloth-drift {
+  animation: jt-cloth-drift 18s linear infinite;
+}
+
+/* Rotating chevron ring around the hero medallion */
+@keyframes jt-spin-slow {
+  to { transform: rotate(360deg); }
+}
+.jt-spin-slow {
+  animation: jt-spin-slow 48s linear infinite;
+}
+
+/* Film grain overlay for the black hero */
+.jt-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Film grain overlay for the paper hero — multiplied, so it darkens */
+.jt-grain-paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Scroll cue */
+@keyframes jt-cue {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50%      { transform: translateY(8px); opacity: 1; }
+}
+.jt-cue { animation: jt-cue 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jt-cloth-drift,
+  .jt-spin-slow,
+  .jt-cue {
+    animation: none !important;
   }
 }
