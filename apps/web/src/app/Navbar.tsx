@@ -3,31 +3,62 @@
 import Link from 'next/link';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { LocaleToggle } from '@/components/LocaleToggle';
-import { MobileNavigation } from '@/app/MobileNavigation';
+import { CardNav, type CardNavItem } from '@/components/reactbits/CardNav';
 import { NAV_ITEMS } from '@/app/nav-items';
 import { useLocale } from '@/contexts/LocaleContext';
+import { bodyFont } from '@/components/home/homeContent';
 
-const NAV_LINK_CLS =
-  'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium text-[var(--jt-stone-600)] transition-colors hover:bg-[var(--jt-olive-50)] hover:text-[var(--jt-olive-700)]';
-
+/**
+ * Site navigation as a floating React Bits "card nav": a 60px bar with the
+ * wordmark centred, a hamburger at the start and locale / theme / Log In at
+ * the end. Opening it drops three cards — Explore, Archive, About — that
+ * carry the FRS Appendix 2 module links (see nav-items.ts) plus the public
+ * pages. Black-on-paper to match the keffiyeh homepage.
+ */
 export default function Navbar() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const modules = NAV_ITEMS.filter((i) => i.href !== '/');
+  const explore = modules.filter((i) => i.available);
+  const archive = modules.filter((i) => !i.available);
+
+  const items: CardNavItem[] = [
+    {
+      label: t('استكشف', 'Explore'),
+      bgColor: '#0a0a0a',
+      textColor: '#F8F4EE',
+      links: explore.map((i) => ({ label: t(i.ar, i.en), href: i.href })),
+    },
+    {
+      label: t('الأرشيف', 'Archive'),
+      bgColor: '#EDE9E2',
+      textColor: '#0a0a0a',
+      links: archive.map((i) => ({ label: t(i.ar, i.en), href: i.href, disabled: true, badge: t('قريبًا', 'Soon') })),
+    },
+    {
+      label: t('عن جذور', 'About'),
+      bgColor: '#B88A14',
+      textColor: '#0a0a0a',
+      links: [
+        { label: t('هويتنا', 'Who We Are'), href: '/about' },
+        { label: t('أهدافنا', 'Why Are We Doing This'), href: '/why' },
+        { label: t('كيف نحقق أهدافنا', 'How Does This Work'), href: '/how' },
+        { label: t('تواصل معنا', 'Contact Us'), href: '/contact' },
+      ],
+    },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[var(--jt-stone-200)]/70 bg-[var(--background)]/85 backdrop-blur supports-[backdrop-filter]:bg-[var(--background)]/70">
-      <div
-        aria-hidden
-        className="absolute inset-x-0 bottom-0 h-px opacity-40"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, transparent, var(--jt-olive-400), var(--jt-gold-400), var(--jt-terra-400), transparent)',
-        }}
-      />
-      <div className="mx-auto flex h-16 max-w-screen-2xl items-center px-5 md:px-8">
-        <Link href="/" className="group flex items-center gap-3">
+    <CardNav
+      items={items}
+      baseColor="#F8F4EE"
+      style={{ fontFamily: bodyFont(locale === 'ar') }}
+      openLabel={t('افتح القائمة', 'Open menu')}
+      closeLabel={t('أغلق القائمة', 'Close menu')}
+      logo={
+        <Link href="/" className="group flex items-center gap-2.5">
           <span
             aria-hidden
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--jt-olive-600)] text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-transform group-hover:-rotate-3"
+            className="relative inline-flex h-8 w-8 items-center justify-center bg-[#0a0a0a] text-[#F8F4EE] transition-transform group-hover:-rotate-3"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 21V9" />
@@ -37,53 +68,29 @@ export default function Navbar() {
               <path d="M4 13c2-1 4-1 6 1 1-2 3-2 5-1" />
             </svg>
           </span>
-          <span className="flex flex-col leading-tight">
-            <span
-              className="text-xl font-bold text-[var(--jt-olive-700)]"
-              style={{ fontFamily: 'var(--jt-font-display)' }}
-            >
+          <span className="flex items-center gap-2.5 leading-none">
+            <span className="text-[1.15rem] font-medium text-[#0a0a0a]" style={{ fontFamily: 'var(--jt-font-kufi)' }}>
               جذور
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--jt-stone-500)]">
+            <span aria-hidden className="h-3.5 w-px bg-black/20" />
+            <span className="pt-px text-[10px] font-normal uppercase tracking-[0.22em] text-[var(--jt-stone-500)]" style={{ fontFamily: 'var(--jt-font-sans-latin)' }}>
               Juthoor
             </span>
           </span>
         </Link>
-
-        <nav className="mx-4 hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto lg:flex">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.en}
-              href={item.available ? item.href : '#'}
-              aria-disabled={!item.available}
-              className={item.available ? NAV_LINK_CLS : `${NAV_LINK_CLS} cursor-default text-[var(--jt-stone-400)] hover:bg-transparent hover:text-[var(--jt-stone-400)]`}
-              onClick={(e) => {
-                if (!item.available) e.preventDefault();
-              }}
-            >
-              {item.icon && <item.icon className="h-4 w-4" />}
-              {t(item.ar, item.en)}
-              {!item.available && (
-                <span className="rounded-full bg-[var(--jt-stone-100)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--jt-stone-500)]">
-                  {t('قريبًا', 'Soon')}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
-          <MobileNavigation />
+      }
+      actions={
+        <>
           <LocaleToggle />
           <ModeToggle />
           <Link
             href="/login"
-            className="jt-btn-shine hidden shrink-0 rounded-full bg-[var(--jt-gold-500)] px-4 py-2 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--jt-gold-600)] hover:shadow-[var(--jt-shadow-md)] sm:inline-flex"
+            className="jt-btn-shine hidden h-10 shrink-0 items-center bg-[var(--jt-gold-500)] px-4 text-[13px] font-medium text-[#0a0a0a] transition-colors hover:bg-[var(--jt-gold-400)] sm:inline-flex"
           >
             {t('تسجيل الدخول', 'Log In / Register')}
           </Link>
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }
