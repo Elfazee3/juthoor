@@ -283,13 +283,13 @@ export function HomeEnClient() {
                     href="/sign-up"
                     className="jt-btn-shine inline-flex items-center gap-2 rounded-full bg-[var(--jt-olive-600)] px-6 py-3 text-sm font-semibold text-[var(--jt-stone-50)] shadow-[var(--jt-shadow-sm)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-olive-700)] hover:shadow-[var(--jt-shadow-md)]"
                   >
-                    Start your tree
+                    Start your own family tree
                   </Link>
                   <Link
                     href="/search"
                     className="inline-flex items-center gap-2 rounded-full border border-[var(--jt-olive-300)] px-6 py-3 text-sm font-semibold text-[var(--jt-olive-800)] transition-all hover:-translate-y-0.5 hover:bg-[var(--jt-olive-50)]"
                   >
-                    Search for family
+                    Search the Palestinian Family Tree
                   </Link>
                 </motion.div>
 
