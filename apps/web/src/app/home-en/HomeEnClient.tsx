@@ -223,22 +223,30 @@ export function HomeEnClient() {
 
             <div className="relative grid items-center gap-10 md:grid-cols-2">
               <motion.div variants={rise} className="order-2 flex justify-center md:order-1">
-                <div className="relative w-full max-w-sm">
+                <div
+                  className="relative aspect-[4/5] w-full max-w-sm"
+                  style={{
+                    WebkitMaskImage: 'radial-gradient(ellipse 68% 72% at 50% 46%, black 45%, transparent 92%)',
+                    maskImage: 'radial-gradient(ellipse 68% 72% at 50% 46%, black 45%, transparent 92%)',
+                  }}
+                >
+                  <Image
+                    src="/images/hero-key.jpg"
+                    alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
+                    fill
+                    sizes="(max-width: 768px) 90vw, 400px"
+                    className="object-cover grayscale"
+                    priority
+                  />
                   <div
                     aria-hidden
-                    className="absolute -inset-3 -z-10 rounded-[32px] opacity-70 blur-md"
-                    style={{ background: 'linear-gradient(135deg, var(--jt-gold-300), var(--jt-terra-300))' }}
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background:
+                        'radial-gradient(ellipse 70% 70% at 50% 45%, transparent 40%, var(--jt-gold-100) 78%, var(--jt-olive-100) 100%)',
+                      mixBlendMode: 'multiply',
+                    }}
                   />
-                  <div className="relative aspect-[4/5] w-full -rotate-2 overflow-hidden rounded-3xl bg-[var(--jt-olive-50)] shadow-[var(--jt-shadow-xl)] transition-transform duration-500 hover:rotate-0">
-                    <Image
-                      src="/images/hero-key.jpg"
-                      alt="An elder's hand and a child's hand together holding an old iron key — the key of return"
-                      fill
-                      sizes="(max-width: 768px) 90vw, 400px"
-                      className="object-cover"
-                      priority
-                    />
-                  </div>
                 </div>
               </motion.div>
 
