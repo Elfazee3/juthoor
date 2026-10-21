@@ -33,3 +33,6 @@ playwright/.auth/
 
 # local dev logs
 dev3000.log
+
+# python
+__pycache__/
