@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Juthoor System Design Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&family=Hanken+Grotesk:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C1917; --muted:#5E5650; --soft:#8A8178; --line:#E4DED3; --line2:#CFC6B8;
+    --olive:#3E7030; --olive-l:#EEF4EA; --gold:#D4A31E; --gold-l:#FBF1D6;
+    --terra:#B4532A; --terra-l:#F8E3DA; --cream:#F7F3ED; --panel:#FBF8F3;
+  }
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#fff; }
+  body{ font-family:'Hanken Grotesk',system-ui,sans-serif; font-size:9.5pt; line-height:1.45; color:var(--ink); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  h1,h2,h3{ margin:0; font-weight:600; }
+  h1{ font-family:'EB Garamond',Georgia,serif; font-size:25pt; line-height:1.15; margin:2px 0 10px; }
+  h2{ font-size:12pt; margin:14px 0 5px; break-after:avoid; }
+  .keep{ break-inside:avoid; }
+  table.compact td, table.compact th{ padding:2.2px 7px; font-size:8.2pt; }
+  h3{ font-size:10.2pt; margin:12px 0 4px; }
+  p{ margin:0 0 8px; }
+  ul,ol{ margin:0 0 8px; padding-left:18px; } li{ margin:2px 0; }
+  .eyebrow{ font-size:8pt; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--terra); }
+  .section{ break-before:page; }
+  .lead{ font-size:10.6pt; color:var(--muted); max-width:165mm; }
+  .muted{ color:var(--muted); } .small{ font-size:8.6pt; }
+  table{ width:100%; border-collapse:collapse; font-size:8.7pt; margin:4px 0 10px; }
+  th{ text-align:left; background:#F3EEE6; font-weight:600; color:var(--ink); }
+  th,td{ padding:3.8px 7px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr{ break-inside:avoid; }
+  thead{ display:table-header-group; }
+  td.k{ white-space:nowrap; color:var(--muted); font-weight:600; }
+  td.grp{ background:var(--panel); font-weight:700; }
+  code{ font-family:Consolas,'Roboto Mono',monospace; font-size:8.2pt; background:#F3EEE6; padding:0 3px; border-radius:3px; }
+  .chip{ display:inline-block; padding:1px 7px; border-radius:9px; font-size:7.6pt; font-weight:700; white-space:nowrap; }
+  .ok{ background:#E3EFDE; color:#2F5A24; } .part{ background:var(--gold-l); color:#76580A; } .no{ background:var(--terra-l); color:#8E3A19; }
+  figure{ break-inside:avoid; margin:8px 0 14px; padding:12px 12px 8px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  figcaption{ font-size:8.3pt; color:var(--soft); margin-top:6px; }
+  svg{ width:100%; height:auto; display:block; }
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:8px 0 12px; }
+  .stat{ border:1px solid var(--line); border-radius:9px; padding:8px 10px; background:var(--panel); }
+  .stat b{ display:block; font-family:'EB Garamond',Georgia,serif; font-size:20pt; line-height:1.1; color:var(--olive); font-weight:600; }
+  .stat span{ font-size:8.2pt; color:var(--muted); }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .callout{ border-left:3px solid var(--terra); background:var(--panel); padding:8px 12px; border-radius:0 8px 8px 0; margin:8px 0 12px; break-inside:avoid; }
+  .swatches{ display:flex; gap:8px; margin:6px 0 10px; }
+  .sw{ flex:1; border:1px solid var(--line); border-radius:8px; overflow:hidden; font-size:7.8pt; }
+  .sw i{ display:block; height:26px; } .sw div{ padding:4px 6px; color:var(--muted); }
+  .cover{ height:258mm; display:flex; flex-direction:column; justify-content:space-between; background:var(--cream); border-radius:14px; padding:22mm 18mm 16mm; }
+  .cover .arabic{ font-family:'Noto Kufi Arabic',sans-serif; font-size:30pt; color:var(--olive); line-height:1.3; }
+  .cover h1{ font-size:38pt; margin:6px 0 10px; }
+  .cover .sub{ font-size:12pt; color:var(--muted); max-width:150mm; }
+  .cover dl{ display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:9.2pt; margin:0; }
+  .cover dt{ color:var(--soft); } .cover dd{ margin:0; }
+  .rule{ height:3px; width:60px; background:var(--terra); margin:14px 0; }
+  .toc{ columns:2; column-gap:18px; font-size:9.6pt; margin-top:6px; }
+  .toc div{ padding:3px 0; border-bottom:1px dotted var(--line2); break-inside:avoid; }
+  .toc b{ color:var(--terra); display:inline-block; width:22px; }
+  /* svg text and shapes */
+  .t{ font:600 10.2px 'Hanken Grotesk',sans-serif; fill:#1C1917; }
+  .s{ font:400 8.8px 'Hanken Grotesk',sans-serif; fill:#57504A; }
+  .g{ font:700 8.4px 'Hanken Grotesk',sans-serif; letter-spacing:.09em; fill:#B4532A; }
+  .lb{ font:600 8.2px 'Hanken Grotesk',sans-serif; fill:#6B6259; }
+  .num{ font:700 10.2px 'Hanken Grotesk',sans-serif; fill:#B4532A; }
+  .box{ fill:#fff; stroke:#CFC6B8; stroke-width:1; }
+  .grpbox{ fill:#FBF8F3; stroke:#E2DACD; stroke-width:1; }
+  .ol{ fill:#EEF4EA; stroke:#A9C29E; stroke-width:1; }
+  .hd{ fill:#F3EEE6; stroke:none; }
+  .ehd{ fill:#E3EFDE; stroke:none; }
+  .dia{ fill:#FBF1D6; stroke:#D9B85A; stroke-width:1; }
+  .arw{ stroke:#57504A; stroke-width:1.15; fill:none; marker-end:url(#ah); }
+  .rel{ stroke:#6E8F63; stroke-width:1.15; fill:none; marker-end:url(#ahg); }
+  .dash{ stroke-dasharray:4 3; }
+  .dok{ fill:#3E7030; } .dpart{ fill:#D4A31E; } .dno{ fill:#B4532A; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#57504A"/></marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6E8F63"/></marker>
+  </defs>
+</svg>
+
+<!-- ============================== COVER ============================== -->
+<div class="cover">
+  <div>
+    <div class="eyebrow">Palestinian Roots Platform</div>
+    <div class="arabic" dir="rtl" lang="ar">جذور</div>
+    <h1>Juthoor<br>System Design Report</h1>
+    <div class="sub">Functional and technical requirements, system architecture, technology stack, frontend design, backend and database, and process flows.</div>
+    <div class="rule"></div>
+  </div>
+  <div>
+    <dl>
+      <dt>Version</dt><dd>1.0</dd>
+      <dt>Date</dt><dd>21 October 2026</dd>
+      <dt>Source</dt><dd>github.com/yossefbouz/juthoor, main branch</dd>
+      <dt>Flow reference</dt><dd>Process Flow Diagram v1.2, reviewed 11 October 2026</dd>
+      <dt>Audience</dt><dd>Project team, partners and reviewers</dd>
+    </dl>
+    <p class="small muted" style="margin-top:14px">Every figure and status in this report was read from the repository code, database migrations and project logs on the date above. Items marked “Partly built” or “Not built” are open work, listed with suggested actions in section 10.</p>
+  </div>
+</div>
+
+<!-- ============================== CONTENTS + SUMMARY ============================== -->
+<div class="section">
+  <div class="eyebrow">Contents</div>
+  <h1>What this report covers</h1>
+  <div class="toc">
+    <div><b>1</b>Summary</div>
+    <div><b>2</b>Functional requirements</div>
+    <div><b>3</b>Technical requirements</div>
+    <div><b>4</b>System architecture</div>
+    <div><b>5</b>Technology stack</div>
+    <div><b>6</b>Frontend design</div>
+    <div><b>7</b>Backend and database</div>
+    <div><b>8</b>Process flows</div>
+    <div><b>9</b>Quality, testing and delivery</div>
+    <div><b>10</b>Gaps, risks and next steps</div>
+    <div><b>A</b>Database table inventory</div>
+    <div><b>B</b>Glossary</div>
+  </div>
+
+  <h2>How to read the status marks</h2>
+  <table>
+    <tr><td style="width:110px"><span class="chip ok">Built</span></td><td>Present in the code on the main branch and reachable in the app.</td></tr>
+    <tr><td><span class="chip part">Partly built</span></td><td>Exists, but does not yet meet the full requirement. The gap is named in the same row.</td></tr>
+    <tr><td><span class="chip no">Not built</span></td><td>Required by the process flow or specification, with no implementation in the code.</td></tr>
+  </table>
+
+  <div style="margin-top:22px" class="eyebrow">1 · Summary</div>
+  <h1>Juthoor at a glance</h1>
+  <p class="lead">Juthoor, Arabic for “roots”, is a bilingual genealogy platform that helps Palestinians worldwide rebuild, connect and preserve their family trees. It is Arabic first and right to left, follows the GEDCOM 7 genealogy standard, and links separate family trees into one shared Palestine Tree through a probabilistic matching engine.</p>
+  <div class="grid">
+    <div class="stat"><b>33</b><span>pages in the web app</span></div>
+    <div class="stat"><b>36</b><span>database tables</span></div>
+    <div class="stat"><b>48</b><span>database migrations</span></div>
+    <div class="stat"><b>110</b><span>row-level security policy definitions</span></div>
+    <div class="stat"><b>57</b><span>SQL functions, including the matching engine</span></div>
+    <div class="stat"><b>456</b><span>Palestinian villages and places seeded</span></div>
+    <div class="stat"><b>116</b><span>unit test cases, plus 6 end-to-end specs</span></div>
+    <div class="stat"><b>17</b><span>database test files</span></div>
+  </div>
+  <h2>State of the build</h2>
+  <ul>
+    <li><b>Core family trees are built.</b> Users can create trees by hand or import GEDCOM files, edit people and relationships on a visual chart, and export the tree again.</li>
+    <li><b>Search is built.</b> Family Finder searches across trees with Arabic normalisation, phonetic matching and Latin to Arabic transliteration.</li>
+    <li><b>The matching engine is built and set to review only.</b> Automatic merging is off by default. Matches go to an admin queue or to both tree owners.</li>
+    <li><b>Privacy for living people is partly built.</b> Search, the people list and the relationship path hide living people’s details. The GEDCOM export does not yet.</li>
+    <li><b>Contact, moderation and access logging are not built yet.</b> They are listed in section 10 together with the decisions they depend on.</li>
+  </ul>
+</div>
+
+<!-- ============================== 2 FUNCTIONAL ============================== -->
+<div class="section">
+  <div class="eyebrow">2 · Functional requirements</div>
+  <h1>What the platform must do</h1>
+  <p class="lead">Requirements follow the eight modules of Process Flow Diagram v1.2, plus the specification rules for tree building and matching. Status is taken from the code.</p>
+  <table>
+    <thead><tr><th style="width:44px">ID</th><th>Requirement</th><th style="width:160px">Where in the app</th><th style="width:78px">Status</th></tr></thead>
+    <tr><td colspan="4" class="grp">1.0 Sign in and register</td></tr>
+    <tr><td class="k">1.1</td><td>Register with email, confirmed by an 8-digit email code</td><td>/sign-up</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">1.2</td><td>Sign in by password, email code or social account; reset a forgotten password</td><td>/login, /forgot-password</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">1.3</td><td>Verify identity with a government ID and family evidence, reviewed by an administrator</td><td>/verify, /admin/verifications</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">1.4</td><td>On registration, find the new user in the Palestine Tree and link the account after confirmation</td><td>Add-yourself page exists; no automatic match</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td colspan="4" class="grp">2.0 Home and information</td></tr>
+    <tr><td class="k">2.1</td><td>Home page, Who we are, Why we are doing this, How it works, Contact us</td><td>/, /about, /why, /how, /contact</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">2.2</td><td>Privacy policy and terms of use, in Arabic and English</td><td>/privacy, /terms</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td colspan="4" class="grp">3.0 Trees</td></tr>
+    <tr><td class="k">3.1</td><td>List the trees a user owns or belongs to</td><td>/tree, /dashboard</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">3.2</td><td>View and edit a tree on a chart and in a 360° person view</td><td>/tree/[id]/chart, /person/[id]</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">3.3</td><td>Horizontal, vertical and fan chart layouts</td><td>One chart layout today</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">3.4</td><td>Create a tree by hand or by importing a GEDCOM file up to 5 MB</td><td>/dashboard/new, import dialog</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">3.5</td><td>Export a tree as a GEDCOM file, leaving out living people</td><td>Export works; no living filter</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">3.6</td><td>Access rights: request read or write access, with proof of family for write; owner approves</td><td>/dashboard/requests</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">3.7</td><td>Palestine Tree: one combined view over all linked trees</td><td>Link overlay built; no combined chart</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td colspan="4" class="grp">4.0 Individual search</td></tr>
+    <tr><td class="k">4.1</td><td>Search by first, father’s, grandfather’s and family name, with phonetic matching</td><td>/search</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">4.2</td><td>Filter by village or town and by district</td><td>/search place filter</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">4.3</td><td>See how you are connected to a person</td><td>Degrees path on search</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">4.4</td><td>View achievements and contribution to the cause</td><td>Person story panel</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">4.5</td><td>View a person’s photos and documents</td><td>Person attachments</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">4.6</td><td>Reach a person’s family through a request, not by phone number</td><td>Relay table only</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td colspan="4" class="grp">5.0 Family search and 6.0 Village search</td></tr>
+    <tr><td class="k">5.1</td><td>Search by family name and open a family page</td><td>/families, /families/[surname]</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">5.2</td><td>Family photo gallery and document archive</td><td>No screen</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td class="k">6.1</td><td>List villages and towns with a district filter; open a village page with history and photos</td><td>/villages, /villages/[id]</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td colspan="4" class="grp">7.0 Pictures and 8.0 Documents</td></tr>
+    <tr><td class="k">7.1</td><td>Upload photos and documents to a person, tagged by type, in private storage</td><td>Person page</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">7.2</td><td>Search all pictures and all documents by name, place and date</td><td>No screen</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td colspan="4" class="grp">Specification rules for tree building and matching</td></tr>
+    <tr><td class="k">R1</td><td>Record women under their maiden name</td><td>Add-person form</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">R2</td><td>Every child is linked to a mother; an unknown mother gets a placeholder that can be filled in later</td><td>Add-relative action</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">R3</td><td>When a man has several wives, pick the right mother for each child</td><td>Mother picker</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">R4</td><td>A child inherits the father’s surname and village by default</td><td>No default today</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td class="k">R5</td><td>Matching runs as an end-of-day batch over 25 weighted fields</td><td>Batch built; no schedule set</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">R6</td><td>Scores of 450 or more merge automatically; lower scores go to admin review</td><td>Switch built, off by design</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">R7</td><td>Admin resolves each match: merge, reject or defer; owners are notified</td><td>/admin/review, in-app notices</td><td><span class="chip ok">Built</span></td></tr>
+  </table>
+</div>
+
+<!-- ============================== 3 TECHNICAL ============================== -->
+<div class="section">
+  <div class="eyebrow">3 · Technical requirements</div>
+  <h1>How the platform must behave</h1>
+  <p class="lead">Non-functional requirements for security, privacy, language, standards, performance and operations.</p>
+  <table>
+    <thead><tr><th style="width:92px">Area</th><th>Requirement</th><th>How it is met today</th><th style="width:78px">Status</th></tr></thead>
+    <tr><td class="k">Security</td><td>Every table is protected at the database layer</td><td>Row-level security on all application tables, with shared access helpers such as can_access_tree and is_admin</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Security</td><td>Users cannot raise their own permissions</td><td>A trigger blocks changes to the admin flag through the public API. The migration is committed with this report; confirm it is applied in production</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Security</td><td>Identity documents are kept apart and private</td><td>Private storage bucket; only the uploader and administrators can read</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Privacy</td><td>Living people are private by default</td><td>Masked in search, the people list, relationship paths and match cards. Not yet in the GEDCOM export or the tree chart loader</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">Privacy</td><td>Every view of private data is logged</td><td>Only match decisions are logged</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td class="k">Language</td><td>Arabic first, right to left, with a full English version</td><td>Arabic layout by default, locale switch, bilingual copy and legal texts</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Standards</td><td>GEDCOM 7 import and export without losing record identifiers</td><td>Parser and serializer keep original record IDs and create new ones without collisions</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Search</td><td>Arabic name variants and Latin spellings find the same person</td><td>Arabic normalisation, phonetic keys, trigram similarity and a Latin to Arabic transliteration table</td><td><span class="chip ok">Built</span></td></tr>
+    <tr><td class="k">Performance</td><td>95% of pages load in under 2 seconds</td><td>Cached auth claims and bulk tree loading; not yet measured in production</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">Availability</td><td>99.9% uptime</td><td>Single server with a health check on deploy; no redundancy or uptime monitoring</td><td><span class="chip no">Not built</span></td></tr>
+    <tr><td class="k">Mobile</td><td>Usable from 360 px wide screens, for users in camps</td><td>Responsive layout; not formally tested at 360 px</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">Accessibility</td><td>WCAG 2.1 AA</td><td>Accessible Radix UI components; no audit yet</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">Compliance</td><td>Data protection review before public launch</td><td>Privacy policy drafted; the privacy contact email is still a placeholder; hosting region not documented</td><td><span class="chip part">Partly built</span></td></tr>
+    <tr><td class="k">Delivery</td><td>Every change is checked and deployed automatically</td><td>CI runs type-check, lint and build; deploy runs after CI passes on main. Database migrations are applied by hand</td><td><span class="chip ok">Built</span></td></tr>
+  </table>
+</div>
+
+<!-- ============================== 4 ARCHITECTURE ============================== -->
+<div class="section">
+  <div class="eyebrow">4 · System architecture</div>
+  <h1>Three tiers and a delivery pipeline</h1>
+  <p class="lead">The browser talks to a Next.js server on a private server. The Next.js server talks to Supabase, which holds the database, sign-in, file storage and live updates. Most business rules live inside the database, so they apply no matter which client calls it.</p>
+  <figure>
+  <svg viewBox="0 0 680 432" role="img" aria-label="System architecture diagram">
+    <rect class="grpbox" x="8" y="22" width="170" height="290" rx="10"/><text class="g" x="18" y="15">USERS AND BROWSER</text>
+    <rect class="grpbox" x="198" y="22" width="266" height="290" rx="10"/><text class="g" x="208" y="15">PRODUCTION SERVER (VPS)</text>
+    <rect class="grpbox" x="484" y="22" width="188" height="290" rx="10"/><text class="g" x="494" y="15">SUPABASE (HOSTED)</text>
+
+    <rect class="box" x="20" y="36" width="146" height="76" rx="7"/>
+    <text class="t" x="32" y="54">People and roles</text>
+    <text class="s" x="32" y="70">Guest, registered user</text><text class="s" x="32" y="83">Tree owner, collaborator</text><text class="s" x="32" y="96">Platform administrator</text>
+    <rect class="box" x="20" y="124" width="146" height="76" rx="7"/>
+    <text class="t" x="32" y="142">Web browser</text>
+    <text class="s" x="32" y="158">Arabic first, right to left</text><text class="s" x="32" y="171">English switch</text><text class="s" x="32" y="184">Desktop and mobile</text>
+    <rect class="box" x="20" y="212" width="146" height="88" rx="7"/>
+    <text class="t" x="32" y="230">React 19 client UI</text>
+    <text class="s" x="32" y="246">Tree chart and 360° view</text><text class="s" x="32" y="259">Forms and search</text><text class="s" x="32" y="272">Live tree updates</text>
+
+    <rect class="box" x="210" y="36" width="242" height="46" rx="7"/>
+    <text class="t" x="222" y="55">Caddy</text><text class="s" x="222" y="70">TLS certificates and reverse proxy</text>
+    <rect class="ol" x="210" y="92" width="242" height="210" rx="8"/>
+    <text class="t" x="222" y="110">Next.js 16 app server</text><text class="s" x="222" y="123">Node 22, run as a systemd service</text>
+    <rect class="box" x="222" y="134" width="218" height="38" rx="6"/><text class="t" x="232" y="149">Proxy</text><text class="s" x="232" y="163">Refreshes the session, guards private pages</text>
+    <rect class="box" x="222" y="176" width="218" height="38" rx="6"/><text class="t" x="232" y="191">Server Components</text><text class="s" x="232" y="205">Load data for each page request</text>
+    <rect class="box" x="222" y="218" width="218" height="38" rx="6"/><text class="t" x="232" y="233">Server Actions</text><text class="s" x="232" y="247">Validated writes: next-safe-action and Zod</text>
+    <rect class="box" x="222" y="260" width="218" height="38" rx="6"/><text class="t" x="232" y="275">Route handler</text><text class="s" x="232" y="289">GEDCOM import and export</text>
+
+    <rect class="box" x="496" y="36" width="164" height="44" rx="7"/><text class="t" x="508" y="53">Auth</text><text class="s" x="508" y="68">Password, email code, social</text>
+    <rect class="box" x="496" y="88" width="164" height="44" rx="7"/><text class="t" x="508" y="105">API layer</text><text class="s" x="508" y="120">PostgREST tables and RPC</text>
+    <rect class="ol" x="496" y="140" width="164" height="96" rx="7"/><text class="t" x="508" y="157">PostgreSQL</text>
+    <text class="s" x="508" y="172">36 tables, row-level security</text><text class="s" x="508" y="185">57 SQL functions</text><text class="s" x="508" y="198">Matching engine in SQL</text><text class="s" x="508" y="211">Arabic phonetic search</text><text class="s" x="508" y="224">Version 17 in production</text>
+    <rect class="box" x="496" y="244" width="164" height="26" rx="7"/><text class="s" x="508" y="261">Storage: 3 private buckets</text>
+    <rect class="box" x="496" y="276" width="164" height="26" rx="7"/><text class="s" x="508" y="293">Realtime channel</text>
+
+    <path class="arw" d="M166 162 L208 162"/><text class="lb" x="187" y="155" text-anchor="middle">HTTPS</text>
+    <path class="arw" d="M452 150 L474 150 L474 58 L494 58"/><text class="lb" x="470" y="104" text-anchor="end">auth</text>
+    <path class="arw" d="M452 200 L494 200"/><text class="lb" x="473" y="194" text-anchor="middle">user JWT</text>
+    <path class="arw dash" d="M93 300 L93 326 L578 326 L578 304"/><text class="lb" x="335" y="321" text-anchor="middle">Realtime websocket: live tree changes</text>
+
+    <text class="g" x="10" y="352">DELIVERY PIPELINE</text>
+    <rect class="box" x="8" y="362" width="150" height="58" rx="7"/><text class="t" x="20" y="381">GitHub repository</text><text class="s" x="20" y="396">main branch and pull requests</text>
+    <rect class="box" x="182" y="362" width="150" height="58" rx="7"/><text class="t" x="194" y="381">CI workflow</text><text class="s" x="194" y="396">Type-check, lint, build</text><text class="s" x="194" y="409">Playwright and pgTAP jobs</text>
+    <rect class="box" x="356" y="362" width="150" height="58" rx="7"/><text class="t" x="368" y="381">Deploy workflow</text><text class="s" x="368" y="396">SSH, pull, build, restart</text><text class="s" x="368" y="409">Health check after restart</text>
+    <rect class="box" x="530" y="362" width="142" height="58" rx="7"/><text class="t" x="542" y="381">Database migrations</text><text class="s" x="542" y="396">Applied by hand</text><text class="s" x="542" y="409">through the SQL editor</text>
+    <path class="arw" d="M158 391 L180 391"/><path class="arw" d="M332 391 L354 391"/>
+    <path class="arw" d="M431 362 L431 314"/><path class="arw dash" d="M601 362 L601 314"/>
+  </svg>
+  <figcaption>Figure 1. Runtime components and the delivery pipeline. Solid arrows are requests; dashed arrows are live or manual connections.</figcaption>
+  </figure>
+  <h2>How a request flows</h2>
+  <ol>
+    <li><b>The browser calls the server.</b> Caddy terminates TLS and passes the request to Next.js.</li>
+    <li><b>The proxy checks the session.</b> It refreshes the Supabase session cookie and sends signed-out visitors away from private pages.</li>
+    <li><b>Server code calls Supabase as the user.</b> Data loaders and server actions use the user’s token, so every query passes through row-level security.</li>
+    <li><b>The database enforces the rules.</b> Policies decide which rows the user may see. Security-definer functions handle sensitive steps such as search masking, access approvals and match decisions.</li>
+    <li><b>The page renders on the server.</b> Interactive parts such as the tree chart hydrate in the browser and subscribe to live changes.</li>
+  </ol>
+  <h2>Trust boundaries</h2>
+  <ul>
+    <li><b>The web app holds no service key.</b> No code in the web app uses the Supabase service role, so a server bug cannot bypass row-level security.</li>
+    <li><b>Administrators are a database flag.</b> Admin pages check the flag on the server, and the database refuses any attempt to set it through the API.</li>
+    <li><b>Files are private.</b> Attachments, proof of family and identity documents sit in three private buckets with their own access policies.</li>
+  </ul>
+</div>
+
+<!-- ============================== 5 STACK ============================== -->
+<div class="section">
+  <div class="eyebrow">5 · Technology stack</div>
+  <h1>What we are using</h1>
+  <p class="lead">A TypeScript monorepo managed by pnpm and Turborepo. The web app is in <code>apps/web</code>; the database schema, tests and seeds are in <code>apps/database</code>.</p>
+  <h2>Frontend</h2>
+  <table class="compact">
+    <thead><tr><th style="width:120px">Layer</th><th style="width:170px">Technology</th><th style="width:70px">Version</th><th>Role</th></tr></thead>
+    <tr><td class="k">Framework</td><td>Next.js, App Router</td><td>16.2</td><td>Server rendering, routing, server actions, route handlers</td></tr>
+    <tr><td class="k">UI library</td><td>React</td><td>19.2</td><td>Components and client interactivity</td></tr>
+    <tr><td class="k">Language</td><td>TypeScript</td><td>6.0</td><td>Typed code across app and tests</td></tr>
+    <tr><td class="k">Styling</td><td>Tailwind CSS</td><td>4.1</td><td>Utility styling with right-to-left support and design tokens</td></tr>
+    <tr><td class="k">Components</td><td>shadcn/ui on Radix UI, lucide icons</td><td>latest</td><td>Accessible dialogs, menus, tabs, sheets, sidebar</td></tr>
+    <tr><td class="k">Forms</td><td>react-hook-form with Zod</td><td>7.72, 4.3</td><td>Form state and validation shared with the server</td></tr>
+    <tr><td class="k">Server calls</td><td>next-safe-action</td><td>7.10</td><td>Typed, validated server actions with friendly bilingual errors</td></tr>
+    <tr><td class="k">Data caching</td><td>TanStack Query</td><td>5.96</td><td>Client-side caching where pages need it</td></tr>
+    <tr><td class="k">Tree layout</td><td>relatives-tree and a custom chart</td><td>3.2</td><td>Family chart with pan, zoom and connectors</td></tr>
+    <tr><td class="k">Genealogy</td><td>parse-gedcom and an in-house serializer</td><td>2.0</td><td>GEDCOM 7 import and export</td></tr>
+    <tr><td class="k">Arabic text</td><td>jslingua and in-house phonetic rules</td><td>0.13</td><td>Transliteration and name folding in the browser</td></tr>
+    <tr><td class="k">Motion and charts</td><td>Framer Motion, Recharts</td><td>12, 2.15</td><td>Animation and statistics</td></tr>
+    <tr><td class="k">Fonts</td><td>Noto Kufi Arabic, Hanken Grotesk, Amiri, Cairo</td><td>Google Fonts</td><td>Arabic and Latin typography</td></tr>
+  </table>
+  <h2>Backend and data</h2>
+  <table class="compact">
+    <thead><tr><th style="width:120px">Layer</th><th style="width:170px">Technology</th><th style="width:70px">Version</th><th>Role</th></tr></thead>
+    <tr><td class="k">Platform</td><td>Supabase, hosted</td><td>managed</td><td>Database, auth, storage, realtime, API</td></tr>
+    <tr><td class="k">Database</td><td>PostgreSQL</td><td>17 prod, 15 local</td><td>Schema, row-level security, business logic in SQL</td></tr>
+    <tr><td class="k">Extensions</td><td>pg_trgm, unaccent, uuid-ossp</td><td>bundled</td><td>Similarity search, accent folding, identifiers</td></tr>
+    <tr><td class="k">Auth</td><td>Supabase Auth with @supabase/ssr</td><td>0.10</td><td>Password, email code and social sign-in with cookie sessions</td></tr>
+    <tr><td class="k">Client SDK</td><td>supabase-js</td><td>2.101</td><td>Queries, RPC calls, storage and realtime</td></tr>
+    <tr><td class="k">Runtime</td><td>Node.js</td><td>22+</td><td>Runs the Next.js server</td></tr>
+  </table>
+  <h2>Tooling and delivery</h2>
+  <table class="compact">
+    <thead><tr><th style="width:120px">Layer</th><th style="width:170px">Technology</th><th style="width:70px">Version</th><th>Role</th></tr></thead>
+    <tr><td class="k">Monorepo</td><td>pnpm workspaces, Turborepo</td><td>9, 2.2</td><td>Package management and task running</td></tr>
+    <tr><td class="k">Unit tests</td><td>Vitest with Testing Library</td><td>4.1</td><td>Logic and component tests</td></tr>
+    <tr><td class="k">End-to-end tests</td><td>Playwright</td><td>1.51</td><td>Browser tests against a local Supabase stack</td></tr>
+    <tr><td class="k">Database tests</td><td>pgTAP</td><td>bundled</td><td>Tests for policies, masking and the matching engine</td></tr>
+    <tr><td class="k">Lint</td><td>oxlint</td><td>1.58</td><td>Fast lint in CI</td></tr>
+    <tr><td class="k">CI and deploy</td><td>GitHub Actions</td><td>hosted</td><td>Checks on every push; deploy to the server after checks pass on main</td></tr>
+    <tr><td class="k">Hosting</td><td>Linux VPS with Caddy and systemd</td><td>self-managed</td><td>Runs the web app behind TLS</td></tr>
+  </table>
+</div>
+
+<!-- ============================== 6 FRONTEND ============================== -->
+<div class="section">
+  <div class="eyebrow">6 · Frontend design</div>
+  <h1>How the web app is built</h1>
+  <p class="lead">The frontend is organised in four layers. Pages render on the server by default; only interactive parts run in the browser.</p>
+  <figure>
+  <svg viewBox="0 0 680 252" role="img" aria-label="Frontend layers diagram">
+    <rect class="grpbox" x="4" y="6" width="672" height="54" rx="9"/><text class="t" x="16" y="30">Routes</text><text class="s" x="16" y="44">App Router groups</text>
+    <rect class="box" x="140" y="16" width="100" height="34" rx="6"/><text class="s" x="190" y="37" text-anchor="middle">Public pages</text>
+    <rect class="box" x="246" y="16" width="100" height="34" rx="6"/><text class="s" x="296" y="37" text-anchor="middle">Auth pages</text>
+    <rect class="box" x="352" y="16" width="100" height="34" rx="6"/><text class="s" x="402" y="37" text-anchor="middle">App pages</text>
+    <rect class="box" x="458" y="16" width="100" height="34" rx="6"/><text class="s" x="508" y="37" text-anchor="middle">Admin pages</text>
+    <rect class="box" x="564" y="16" width="100" height="34" rx="6"/><text class="s" x="614" y="37" text-anchor="middle">GEDCOM API</text>
+
+    <rect class="grpbox" x="4" y="68" width="672" height="54" rx="9"/><text class="t" x="16" y="92">Components</text><text class="s" x="16" y="106">UI building blocks</text>
+    <rect class="box" x="140" y="78" width="125" height="34" rx="6"/><text class="s" x="202" y="99" text-anchor="middle">shadcn/ui on Radix</text>
+    <rect class="box" x="271" y="78" width="125" height="34" rx="6"/><text class="s" x="333" y="99" text-anchor="middle">Tree chart, 360° view</text>
+    <rect class="box" x="402" y="78" width="125" height="34" rx="6"/><text class="s" x="464" y="99" text-anchor="middle">Forms with Zod</text>
+    <rect class="box" x="533" y="78" width="131" height="34" rx="6"/><text class="s" x="598" y="99" text-anchor="middle">Search, villages, families</text>
+
+    <rect class="ol" x="4" y="130" width="672" height="54" rx="9"/><text class="t" x="16" y="154">Data layer</text><text class="s" x="16" y="168">Server-only modules</text>
+    <rect class="box" x="140" y="140" width="125" height="34" rx="6"/><text class="s" x="202" y="161" text-anchor="middle">Public loaders</text>
+    <rect class="box" x="271" y="140" width="125" height="34" rx="6"/><text class="s" x="333" y="161" text-anchor="middle">User server actions</text>
+    <rect class="box" x="402" y="140" width="125" height="34" rx="6"/><text class="s" x="464" y="161" text-anchor="middle">Admin guards</text>
+    <rect class="box" x="533" y="140" width="131" height="34" rx="6"/><text class="s" x="598" y="161" text-anchor="middle">Query cache, realtime</text>
+
+    <rect class="grpbox" x="4" y="192" width="672" height="54" rx="9"/><text class="t" x="16" y="216">Supabase clients</text><text class="s" x="16" y="230">Session aware</text>
+    <rect class="box" x="140" y="202" width="168" height="34" rx="6"/><text class="s" x="224" y="223" text-anchor="middle">Server client with cookies</text>
+    <rect class="box" x="314" y="202" width="168" height="34" rx="6"/><text class="s" x="398" y="223" text-anchor="middle">Browser client for realtime</text>
+    <rect class="box" x="488" y="202" width="176" height="34" rx="6"/><text class="s" x="576" y="223" text-anchor="middle">Middleware session refresh</text>
+  </svg>
+  <figcaption>Figure 2. Frontend layers, from routes at the top to the Supabase clients at the bottom.</figcaption>
+  </figure>
+  <h2>Route map</h2>
+  <table class="compact">
+    <thead><tr><th style="width:110px">Area</th><th>Routes</th><th style="width:150px">Who can open them</th></tr></thead>
+    <tr><td class="k">Public</td><td>/, /about, /why, /how, /contact, /privacy, /terms</td><td>Everyone</td></tr>
+    <tr><td class="k">Sign-in</td><td>/login, /sign-up, /forgot-password, /update-password, /auth/auth-code-error</td><td>Everyone</td></tr>
+    <tr><td class="k">Dashboard</td><td>/dashboard, /dashboard/new, /dashboard/requests, /dashboard/connections</td><td>Signed-in users</td></tr>
+    <tr><td class="k">Trees</td><td>/tree, /tree/[id], chart, people, person/[id], add-person, add-self</td><td>Signed-in users with tree access</td></tr>
+    <tr><td class="k">Discovery</td><td>/search, /families, /families/[surname], /villages, /villages/[id]</td><td>Signed-in users</td></tr>
+    <tr><td class="k">Verification</td><td>/verify</td><td>Signed-in users</td></tr>
+    <tr><td class="k">Admin</td><td>/admin/review, /admin/verifications</td><td>Administrators only</td></tr>
+    <tr><td class="k">API</td><td>/api/tree/[id]/gedcom: GET exports, POST imports</td><td>Signed-in users, checked by row-level security</td></tr>
+  </table>
+  <div class="two">
+    <div>
+      <h2>Design system</h2>
+      <p>Colours are defined once as tokens and switch for dark mode. The palette is olive, gold, terra and stone on a warm cream background.</p>
+      <div class="swatches">
+        <div class="sw"><i style="background:#3E7030"></i><div>Olive #3E7030</div></div>
+        <div class="sw"><i style="background:#D4A31E"></i><div>Gold #D4A31E</div></div>
+        <div class="sw"><i style="background:#B4532A"></i><div>Terra #B4532A</div></div>
+        <div class="sw"><i style="background:#F7F3ED"></i><div>Cream #F7F3ED</div></div>
+      </div>
+      <p>Arabic text uses Noto Kufi Arabic with Cairo and Amiri as fallbacks. Latin text uses Hanken Grotesk with Inter as fallback.</p>
+    </div>
+    <div>
+      <h2>Language and direction</h2>
+      <p>The page starts in Arabic with right-to-left layout. A locale switch changes copy and direction. Layout uses logical start and end classes so the sidebar and panels mirror correctly in both languages.</p>
+      <h2>Key screens</h2>
+      <ul class="small">
+        <li><b>Tree workspace.</b> Chart with pan and zoom, add-relative buttons on each card, ghost cards for missing parents.</li>
+        <li><b>360° person view.</b> Parents above, children below, siblings and spouses beside.</li>
+        <li><b>Admin review.</b> Side-by-side match cards with agree, disagree and missing marks.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== 7 BACKEND ============================== -->
+<div class="section">
+  <div class="eyebrow">7 · Backend and database</div>
+  <h1>Where the data lives and how it is protected</h1>
+  <p class="lead">The database follows the GEDCOM 7 model: people, names, events, families and places. Around that core sit access control, media, verification and the matching engine.</p>
+  <h2>Tables by domain</h2>
+  <table>
+    <thead><tr><th style="width:120px">Domain</th><th>Tables</th><th style="width:200px">Purpose</th></tr></thead>
+    <tr><td class="k">Genealogy core</td><td>trees, persons, person_names, events, families, family_children, places</td><td>The family record in GEDCOM shape</td></tr>
+    <tr><td class="k">Users and access</td><td>profiles, tree_members, identity_verifications</td><td>Accounts, roles, access requests, ID checks</td></tr>
+    <tr><td class="k">Content and media</td><td>person_profiles, person_attachments, place_profiles</td><td>Stories, photos, documents, village pages</td></tr>
+    <tr><td class="k">Search</td><td>match_paths, name_variants</td><td>Cached relationship paths, name dictionary</td></tr>
+    <tr><td class="k">Matching</td><td>match_features, match_features_dirty, match_block_keys, match_block_skips, matches, matching_runs, app_settings, person_privacy_holds, eval_pairs, eval_runs</td><td>Feature vectors, candidate pairs, scores, runs, settings, opt-outs, evaluation</td></tr>
+    <tr><td class="k">Linking and review</td><td>person_links, merge_log, match_hints, match_audit, notifications, contact_relay, overlay_refresh_queue</td><td>Confirmed links, undo log, owner hints, audit, notices, anonymous relay</td></tr>
+  </table>
+  <figure>
+  <svg viewBox="0 0 680 424" role="img" aria-label="Core genealogy entity relationship diagram">
+    <rect class="box" x="10" y="10" width="200" height="86" rx="7"/><rect class="ehd" x="10.5" y="10.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="20" y="25">profiles</text>
+    <text class="s" x="20" y="46">id = sign-in account</text><text class="s" x="20" y="59">display_name, display_name_ar</text><text class="s" x="20" y="72">preferred_language</text><text class="s" x="20" y="85">is_admin, protected by trigger</text>
+
+    <rect class="box" x="240" y="10" width="200" height="86" rx="7"/><rect class="ehd" x="240.5" y="10.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="250" y="25">trees</text>
+    <text class="s" x="250" y="46">id, name, description</text><text class="s" x="250" y="59">owner_id</text><text class="s" x="250" y="72">is_public, private by default</text><text class="s" x="250" y="85">gedcom_filename, imported_at</text>
+
+    <rect class="box" x="470" y="10" width="200" height="86" rx="7"/><rect class="ehd" x="470.5" y="10.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="480" y="25">tree_members</text>
+    <text class="s" x="480" y="46">tree_id, user_id</text><text class="s" x="480" y="59">role: owner, collaborator, read-only</text><text class="s" x="480" y="72">status: pending, approved, rejected</text><text class="s" x="480" y="85">proof_url, requester_note</text>
+
+    <rect class="box" x="10" y="160" width="200" height="86" rx="7"/><rect class="ehd" x="10.5" y="160.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="20" y="175">person_names</text>
+    <text class="s" x="20" y="196">person_id</text><text class="s" x="20" y="209">given_name, surname</text><text class="s" x="20" y="222">lang, name_type, is_primary</text><text class="s" x="20" y="235">normalised and phonetic columns</text>
+
+    <rect class="ol" x="240" y="160" width="200" height="98" rx="7"/><rect class="ehd" x="240.5" y="160.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="250" y="175">persons</text>
+    <text class="s" x="250" y="196">id, tree_id</text><text class="s" x="250" y="209">gender</text><text class="s" x="250" y="222">display_name_ar, display_name_en</text><text class="s" x="250" y="235">is_living</text><text class="s" x="250" y="248">gedcom_xref, notes</text>
+
+    <rect class="box" x="470" y="160" width="200" height="86" rx="7"/><rect class="ehd" x="470.5" y="160.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="480" y="175">events</text>
+    <text class="s" x="480" y="196">person_id or family_id</text><text class="s" x="480" y="209">event_type: birth, death, marriage</text><text class="s" x="480" y="222">date_value, date_year</text><text class="s" x="480" y="235">place_id</text>
+
+    <rect class="box" x="10" y="330" width="200" height="73" rx="7"/><rect class="ehd" x="10.5" y="330.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="20" y="345">family_children</text>
+    <text class="s" x="20" y="366">family_id</text><text class="s" x="20" y="379">child_id</text><text class="s" x="20" y="392">pedigree: birth, adopted, foster</text>
+
+    <rect class="box" x="240" y="330" width="200" height="73" rx="7"/><rect class="ehd" x="240.5" y="330.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="250" y="345">families</text>
+    <text class="s" x="250" y="366">id, tree_id</text><text class="s" x="250" y="379">partner1_id</text><text class="s" x="250" y="392">partner2_id</text>
+
+    <rect class="box" x="470" y="330" width="200" height="86" rx="7"/><rect class="ehd" x="470.5" y="330.5" width="199" height="21" rx="6.5"/>
+    <text class="t" x="480" y="345">places</text>
+    <text class="s" x="480" y="366">name_ar, name_en</text><text class="s" x="480" y="379">district, coordinates</text><text class="s" x="480" y="392">depopulated_year</text><text class="s" x="480" y="405">456 villages and places seeded</text>
+
+    <path class="rel" d="M240 53 L212 53"/><text class="lb" x="226" y="47" text-anchor="middle">owner</text>
+    <path class="rel" d="M470 53 L442 53"/><text class="lb" x="456" y="47" text-anchor="middle">tree</text>
+    <path class="rel" d="M340 160 L340 98"/><text class="lb" x="346" y="132">tree</text>
+    <path class="rel" d="M210 209 L238 209"/><text class="lb" x="224" y="203" text-anchor="middle">person</text>
+    <path class="rel" d="M470 209 L442 209"/><text class="lb" x="456" y="203" text-anchor="middle">person</text>
+    <path class="rel" d="M570 330 L570 248"/><text class="lb" x="576" y="292">place</text>
+    <path class="rel" d="M340 330 L340 260"/><text class="lb" x="346" y="300">partners</text>
+    <path class="rel" d="M210 366 L238 366"/><text class="lb" x="224" y="360" text-anchor="middle">family</text>
+    <path class="rel" d="M110 330 L110 290 L270 290 L270 260"/><text class="lb" x="190" y="285" text-anchor="middle">child</text>
+  </svg>
+  <figcaption>Figure 3. Core genealogy tables. Arrows point from a table to the table it refers to.</figcaption>
+  </figure>
+
+</div>
+
+<div class="section">
+  <div class="eyebrow">7 · Backend and database, continued</div>
+  <h1>Security, search and storage</h1>
+  <h2 style="margin-top:4px">Security model</h2>
+  <table>
+    <thead><tr><th style="width:150px">Mechanism</th><th>What it does</th></tr></thead>
+    <tr><td class="k">Row-level security</td><td>Every application table has policies. Tree data is readable when the tree is public, owned by the user, or the user is an approved member. Writes need owner or collaborator rights.</td></tr>
+    <tr><td class="k">Access helpers</td><td>can_access_tree, can_write_tree, is_tree_owner, is_tree_member and is_admin are shared by the policies.</td></tr>
+    <tr><td class="k">Definer functions</td><td>Search, access approvals, match decisions and link changes run as security-definer functions with a pinned search path. Each one checks the caller itself.</td></tr>
+    <tr><td class="k">Living-person masking</td><td>is_person_living treats anyone without a death record and born less than a century ago, or with no birth year, as living. Search hides their birth year and village from non-members; relationship paths show “Hidden relative”.</td></tr>
+    <tr><td class="k">Match privacy</td><td>Owners never read the raw match table. They see a masked card view. Pairs with a living person are never merged by an admin; both owners must accept.</td></tr>
+    <tr><td class="k">Admin guard</td><td>A trigger blocks any change to the admin flag made through the public API.</td></tr>
+    <tr><td class="k">Storage policies</td><td>Files live under a folder named after the uploader. Policies allow the uploader, the tree owner or administrators, depending on the bucket.</td></tr>
+  </table>
+  <h2>Family Finder search</h2>
+  <p>Search runs in one database function. It normalises Arabic spelling, builds phonetic keys and compares names with trigram similarity. It scores given name, family name, father, mother, birthplace and birth year, and returns a score breakdown. Private trees are redacted, and living people lose their birth year and village unless the searcher is the owner or an approved member.</p>
+  <h2>Storage buckets</h2>
+  <table>
+    <thead><tr><th style="width:150px">Bucket</th><th>Contents</th><th style="width:200px">Who can read</th></tr></thead>
+    <tr><td class="k">person-attachments</td><td>Photos and documents tagged to a person, such as portraits, certificates and land deeds</td><td>Anyone who can read that person’s tree</td></tr>
+    <tr><td class="k">proof-of-family</td><td>Evidence uploaded with a write-access request</td><td>The requester and the tree owner</td></tr>
+    <tr><td class="k">verification-docs</td><td>Government IDs and family evidence for identity checks</td><td>The uploader and administrators</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="eyebrow">7 · Backend and database, continued</div>
+  <h1>The matching engine</h1>
+  <p>The matching engine finds the same person recorded in different family trees. It is written in SQL and follows the Fellegi-Sunter method used in record linkage.</p>
+  <table>
+    <thead><tr><th style="width:130px">Stage</th><th>What happens</th></tr></thead>
+    <tr><td class="k">1. Change queue</td><td>Triggers on people, names, events and families put the person and close relatives into a queue whenever data changes.</td></tr>
+    <tr><td class="k">2. Features</td><td>Each queued person gets a feature vector: transliterated, normalised and phonetic names for self, parents, grandparents and spouses, plus life facts.</td></tr>
+    <tr><td class="k">3. Blocking</td><td>Several blocking passes pick candidate pairs from different trees. Caps stop oversized groups from slowing the run.</td></tr>
+    <tr><td class="k">4. Scoring</td><td>score_pair weighs 25 fields. Hard vetoes reject pairs with a different gender, the same tree, birth years more than 15 years apart, or a privacy hold.</td></tr>
+    <tr><td class="k">5. Routing</td><td>Pairs with a living person become masked hints for both owners. Other pairs go to the admin review queue. Automatic merging is switched off by default.</td></tr>
+    <tr><td class="k">6. Linking</td><td>A confirmed link joins two records. Links form the Palestine Tree overlay. Any link can be revoked, which removes its notifications, relay tokens and cached paths.</td></tr>
+  </table>
+  <div class="callout small"><b>Open point.</b> The batch function exists, but no schedule is defined in the repository. Running it nightly needs a scheduled job in Supabase or on the server.</div>
+  <h2>Environments and migrations</h2>
+  <ul>
+    <li><b>Local.</b> The Supabase CLI runs the full stack in Docker. A reset builds all 48 migrations from scratch, and a demo seed creates trees, people, matches and verifications.</li>
+    <li><b>Production.</b> Hosted Supabase on PostgreSQL 17. Migrations are applied by hand after testing locally. The security fixes of 12 October 2026 are now recorded in the migrations folder.</li>
+    <li><b>Types.</b> The TypeScript database types are maintained by hand. Running the type generator overwrites them, so each new table is added manually.</li>
+  </ul>
+</div>
+
+<!-- ============================== 8 PROCESS FLOWS ============================== -->
+<div class="section">
+  <div class="eyebrow">8 · Process flows</div>
+  <h1>The eight modules and their status</h1>
+  <p class="lead">This map follows Process Flow Diagram v1.2. Each line is one step from the diagram, marked by what the code does today.</p>
+  <figure>
+  <svg viewBox="0 0 680 362" role="img" aria-label="Module map from the process flow diagram">
+    <rect class="box" x="8" y="8" width="158" height="200" rx="8"/><rect class="hd" x="8.5" y="8.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="18" y="28">1.0</text><text class="t" x="42" y="28">Sign in and register</text>
+    <circle class="dok" cx="20" cy="56" r="4"/><text class="s" x="30" y="59">Sign up with email code</text>
+    <circle class="dok" cx="20" cy="78" r="4"/><text class="s" x="30" y="81">Password, code or social</text>
+    <circle class="dok" cx="20" cy="100" r="4"/><text class="s" x="30" y="103">Forgot password</text>
+    <circle class="dok" cx="20" cy="122" r="4"/><text class="s" x="30" y="125">Identity verification</text>
+    <circle class="dok" cx="20" cy="144" r="4"/><text class="s" x="30" y="147">Add yourself to a tree</text>
+    <circle class="dno" cx="20" cy="166" r="4"/><text class="s" x="30" y="169">Link account to a person</text>
+
+    <rect class="box" x="176" y="8" width="158" height="200" rx="8"/><rect class="hd" x="176.5" y="8.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="186" y="28">2.0</text><text class="t" x="210" y="28">Home and information</text>
+    <circle class="dok" cx="188" cy="56" r="4"/><text class="s" x="198" y="59">Home page</text>
+    <circle class="dok" cx="188" cy="78" r="4"/><text class="s" x="198" y="81">Who we are, why, how</text>
+    <circle class="dok" cx="188" cy="100" r="4"/><text class="s" x="198" y="103">Contact us</text>
+    <circle class="dok" cx="188" cy="122" r="4"/><text class="s" x="198" y="125">Privacy policy and terms</text>
+    <circle class="dok" cx="188" cy="144" r="4"/><text class="s" x="198" y="147">Arabic and English switch</text>
+
+    <rect class="box" x="344" y="8" width="158" height="200" rx="8"/><rect class="hd" x="344.5" y="8.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="354" y="28">3.0</text><text class="t" x="378" y="28">Trees</text>
+    <circle class="dok" cx="356" cy="56" r="4"/><text class="s" x="366" y="59">My trees list</text>
+    <circle class="dok" cx="356" cy="78" r="4"/><text class="s" x="366" y="81">Chart, 360° view, edit</text>
+    <circle class="dok" cx="356" cy="100" r="4"/><text class="s" x="366" y="103">Create or import GEDCOM</text>
+    <circle class="dpart" cx="356" cy="122" r="4"/><text class="s" x="366" y="125">Export GEDCOM</text>
+    <circle class="dok" cx="356" cy="144" r="4"/><text class="s" x="366" y="147">Access requests</text>
+    <circle class="dpart" cx="356" cy="166" r="4"/><text class="s" x="366" y="169">Palestine Tree overlay</text>
+    <circle class="dno" cx="356" cy="188" r="4"/><text class="s" x="366" y="191">Vertical and fan views</text>
+
+    <rect class="box" x="512" y="8" width="158" height="200" rx="8"/><rect class="hd" x="512.5" y="8.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="522" y="28">4.0</text><text class="t" x="546" y="28">Individual search</text>
+    <circle class="dok" cx="524" cy="56" r="4"/><text class="s" x="534" y="59">Name chain, phonetic</text>
+    <circle class="dok" cx="524" cy="78" r="4"/><text class="s" x="534" y="81">Village, district filter</text>
+    <circle class="dok" cx="524" cy="100" r="4"/><text class="s" x="534" y="103">How you are connected</text>
+    <circle class="dok" cx="524" cy="122" r="4"/><text class="s" x="534" y="125">Achievements, contribution</text>
+    <circle class="dok" cx="524" cy="144" r="4"/><text class="s" x="534" y="147">Photos and documents</text>
+    <circle class="dno" cx="524" cy="166" r="4"/><text class="s" x="534" y="169">Contact by request</text>
+
+    <rect class="box" x="8" y="220" width="158" height="110" rx="8"/><rect class="hd" x="8.5" y="220.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="18" y="240">5.0</text><text class="t" x="42" y="240">Family search</text>
+    <circle class="dok" cx="20" cy="268" r="4"/><text class="s" x="30" y="271">Search by family name</text>
+    <circle class="dok" cx="20" cy="290" r="4"/><text class="s" x="30" y="293">Family page</text>
+    <circle class="dno" cx="20" cy="312" r="4"/><text class="s" x="30" y="315">Family gallery, archive</text>
+
+    <rect class="box" x="176" y="220" width="158" height="110" rx="8"/><rect class="hd" x="176.5" y="220.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="186" y="240">6.0</text><text class="t" x="210" y="240">Village search</text>
+    <circle class="dok" cx="188" cy="268" r="4"/><text class="s" x="198" y="271">List with district filter</text>
+    <circle class="dok" cx="188" cy="290" r="4"/><text class="s" x="198" y="293">Village page and history</text>
+    <circle class="dok" cx="188" cy="312" r="4"/><text class="s" x="198" y="315">Village photos</text>
+
+    <rect class="box" x="344" y="220" width="158" height="110" rx="8"/><rect class="hd" x="344.5" y="220.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="354" y="240">7.0</text><text class="t" x="378" y="240">Pictures</text>
+    <circle class="dok" cx="356" cy="268" r="4"/><text class="s" x="366" y="271">Upload photo to a person</text>
+    <circle class="dok" cx="356" cy="290" r="4"/><text class="s" x="366" y="293">Type tags, private storage</text>
+    <circle class="dno" cx="356" cy="312" r="4"/><text class="s" x="366" y="315">Search all pictures</text>
+
+    <rect class="box" x="512" y="220" width="158" height="110" rx="8"/><rect class="hd" x="512.5" y="220.5" width="157" height="30" rx="7.5"/>
+    <text class="num" x="522" y="240">8.0</text><text class="t" x="546" y="240">Documents</text>
+    <circle class="dok" cx="524" cy="268" r="4"/><text class="s" x="534" y="271">Upload document to person</text>
+    <circle class="dok" cx="524" cy="290" r="4"/><text class="s" x="534" y="293">Access follows the tree</text>
+    <circle class="dno" cx="524" cy="312" r="4"/><text class="s" x="534" y="315">Search all documents</text>
+
+    <circle class="dok" cx="14" cy="350" r="4"/><text class="s" x="24" y="353">Built</text>
+    <circle class="dpart" cx="74" cy="350" r="4"/><text class="s" x="84" y="353">Partly built</text>
+    <circle class="dno" cx="160" cy="350" r="4"/><text class="s" x="170" y="353">Not built</text>
+    <text class="s" x="670" y="353" text-anchor="end">Admin review and verification screens also exist, outside the eight modules.</text>
+  </svg>
+  <figcaption>Figure 4. Module map from Process Flow Diagram v1.2 with the build status of each step.</figcaption>
+  </figure>
+  <h2>How the flow review comments are reflected</h2>
+  <table class="compact">
+    <thead><tr><th style="width:52px">Comment</th><th>Point raised on 11 October 2026</th><th>Where the build stands</th></tr></thead>
+    <tr><td class="k">G1</td><td>Define PFT, IFT and VCC</td><td>Defined in the glossary, appendix B</td></tr>
+    <tr><td class="k">G2</td><td>Use one name per role and list all roles</td><td>Roles in the code: guest, registered user, tree owner, collaborator, read-only member, administrator. No moderator role</td></tr>
+    <tr><td class="k">#4</td><td>Anyone could claim to be an existing person</td><td>No claim flow exists. Identity checks are per account; write access needs owner approval</td></tr>
+    <tr><td class="k">#6</td><td>Social login, sign out and delete account</td><td>Social sign-in and sign out are built. Account deletion is not</td></tr>
+    <tr><td class="k">#8</td><td>Privacy policy, terms, FAQ and a language switch</td><td>Privacy policy, terms and the switch are built. No FAQ page</td></tr>
+    <tr><td class="k">#18</td><td>Choose the district first, then the village</td><td>The village picker shows each district but does not filter by it first</td></tr>
+    <tr><td class="k">#19</td><td>Search results must respect privacy for living people</td><td>Built: birth year and village are hidden from non-members</td></tr>
+    <tr><td class="k">#20</td><td>One access check with an access-denied branch</td><td>Built as one check with a request-access path, figure 6</td></tr>
+    <tr><td class="k">#21</td><td>Show the shortest path instead of every connection</td><td>Built: the shortest path, with hidden names for living people</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="eyebrow">8 · Process flows, continued</div>
+  <h1>Three key flows</h1>
+  <h2>A. Registration and identity verification</h2>
+  <figure>
+  <svg viewBox="0 0 680 246" role="img" aria-label="Registration and verification flow">
+    <rect class="box" x="8" y="14" width="120" height="52" rx="7"/><text class="t" x="68" y="36" text-anchor="middle">Sign up</text><text class="s" x="68" y="50" text-anchor="middle">email and password</text>
+    <rect class="box" x="144" y="14" width="120" height="52" rx="7"/><text class="t" x="204" y="36" text-anchor="middle">Confirm the</text><text class="s" x="204" y="50" text-anchor="middle">8-digit email code</text>
+    <rect class="box" x="280" y="14" width="120" height="52" rx="7"/><text class="t" x="340" y="36" text-anchor="middle">Profile created</text><text class="s" x="340" y="50" text-anchor="middle">automatically</text>
+    <rect class="box" x="416" y="14" width="120" height="52" rx="7"/><text class="t" x="476" y="36" text-anchor="middle">Create a tree</text><text class="s" x="476" y="50" text-anchor="middle">or add yourself</text>
+    <rect class="box" x="552" y="14" width="120" height="52" rx="7"/><text class="t" x="612" y="36" text-anchor="middle">Upload ID and</text><text class="s" x="612" y="50" text-anchor="middle">family evidence</text>
+    <path class="arw" d="M128 40 L142 40"/><path class="arw" d="M264 40 L278 40"/><path class="arw" d="M400 40 L414 40"/><path class="arw" d="M536 40 L550 40"/>
+    <path class="arw" d="M612 66 L612 108"/>
+    <rect class="ol" x="552" y="110" width="120" height="52" rx="7"/><text class="t" x="612" y="132" text-anchor="middle">Administrator</text><text class="s" x="612" y="146" text-anchor="middle">reviews documents</text>
+    <polygon class="dia" points="428,136 470,108 512,136 470,164"/><text class="t" x="470" y="140" text-anchor="middle">Approved?</text>
+    <path class="arw" d="M552 136 L514 136"/>
+    <path class="arw" d="M428 136 L402 136"/><text class="lb" x="415" y="129" text-anchor="middle">Yes</text>
+    <rect class="box" x="280" y="110" width="120" height="52" rx="7"/><text class="t" x="340" y="132" text-anchor="middle">Verified account</text><text class="s" x="340" y="146" text-anchor="middle">can manage records</text>
+    <path class="arw" d="M470 164 L470 188"/><text class="lb" x="478" y="180">No</text>
+    <rect class="box" x="410" y="190" width="120" height="46" rx="7"/><text class="t" x="470" y="209" text-anchor="middle">Rejected with note</text><text class="s" x="470" y="223" text-anchor="middle">user may resubmit</text>
+    <text class="s" x="8" y="126">Documents stay in a private bucket.</text>
+    <text class="s" x="8" y="139">Only the user and administrators</text>
+    <text class="s" x="8" y="152">can open them.</text>
+  </svg>
+  <figcaption>Figure 5. Process steps 1.1 and 1.2 as built. Matching a new user to an existing person, step 1.1.2, is not built.</figcaption>
+  </figure>
+
+  <h2>B. Requesting access to a family tree</h2>
+  <figure>
+  <svg viewBox="0 0 680 246" role="img" aria-label="Tree access request flow">
+    <rect class="box" x="8" y="14" width="120" height="52" rx="7"/><text class="t" x="68" y="36" text-anchor="middle">Search finds</text><text class="s" x="68" y="50" text-anchor="middle">a relative</text>
+    <rect class="box" x="144" y="14" width="120" height="52" rx="7"/><text class="t" x="204" y="36" text-anchor="middle">Open the</text><text class="s" x="204" y="50" text-anchor="middle">family tree</text>
+    <path class="arw" d="M128 40 L142 40"/><path class="arw" d="M264 40 L296 40"/>
+    <polygon class="dia" points="298,40 340,12 382,40 340,68"/><text class="t" x="340" y="38" text-anchor="middle">Public or</text><text class="t" x="340" y="50" text-anchor="middle">member?</text>
+    <path class="arw" d="M382 40 L414 40"/><text class="lb" x="398" y="33" text-anchor="middle">No</text>
+    <rect class="box" x="416" y="14" width="120" height="52" rx="7"/><text class="t" x="476" y="36" text-anchor="middle">Request read or</text><text class="s" x="476" y="50" text-anchor="middle">write access</text>
+    <path class="arw" d="M536 40 L550 40"/>
+    <rect class="box" x="552" y="14" width="120" height="52" rx="7"/><text class="t" x="612" y="36" text-anchor="middle">Write access needs</text><text class="s" x="612" y="50" text-anchor="middle">proof of family</text>
+    <path class="arw" d="M612 66 L612 108"/>
+    <rect class="ol" x="552" y="110" width="120" height="52" rx="7"/><text class="t" x="612" y="132" text-anchor="middle">Tree owner</text><text class="s" x="612" y="146" text-anchor="middle">reviews the request</text>
+    <polygon class="dia" points="428,136 470,108 512,136 470,164"/><text class="t" x="470" y="140" text-anchor="middle">Approved?</text>
+    <path class="arw" d="M552 136 L514 136"/>
+    <path class="arw" d="M428 136 L402 136"/><text class="lb" x="415" y="129" text-anchor="middle">Yes</text>
+    <rect class="box" x="280" y="110" width="120" height="52" rx="7"/><text class="t" x="340" y="132" text-anchor="middle">Member access</text><text class="s" x="340" y="146" text-anchor="middle">granted by role</text>
+    <path class="arw" d="M470 164 L470 188"/><text class="lb" x="478" y="180">No</text>
+    <rect class="box" x="410" y="190" width="120" height="46" rx="7"/><text class="t" x="470" y="209" text-anchor="middle">Rejected</text><text class="s" x="470" y="223" text-anchor="middle">with a reason</text>
+    <path class="arw" d="M340 68 L340 88 L68 88 L68 108"/><text class="lb" x="330" y="82" text-anchor="end">Yes</text>
+    <rect class="box" x="8" y="110" width="120" height="58" rx="7"/><text class="t" x="68" y="129" text-anchor="middle">View the tree</text><text class="s" x="68" y="143" text-anchor="middle">living details hidden</text><text class="s" x="68" y="156" text-anchor="middle">unless a member</text>
+    <path class="arw" d="M280 136 L130 136"/><text class="lb" x="205" y="129" text-anchor="middle">full view</text>
+  </svg>
+  <figcaption>Figure 6. Access requests. The access check sits right after a tree is opened, as the flow review asked.</figcaption>
+  </figure>
+
+</div>
+
+<div class="section">
+  <div class="eyebrow">8 · Process flows, continued</div>
+  <h1>Matching flow and roles</h1>
+  <h2 style="margin-top:4px">C. Matching records across trees</h2>
+  <figure>
+  <svg viewBox="0 0 680 296" role="img" aria-label="Matching flow">
+    <rect class="box" x="8" y="14" width="120" height="52" rx="7"/><text class="t" x="68" y="36" text-anchor="middle">Person data</text><text class="s" x="68" y="50" text-anchor="middle">added or edited</text>
+    <rect class="box" x="144" y="14" width="120" height="52" rx="7"/><text class="t" x="204" y="36" text-anchor="middle">Change queued</text><text class="s" x="204" y="50" text-anchor="middle">for matching</text>
+    <rect class="box" x="280" y="14" width="120" height="52" rx="7"/><text class="t" x="340" y="36" text-anchor="middle">Batch refreshes</text><text class="s" x="340" y="50" text-anchor="middle">name features</text>
+    <rect class="box" x="416" y="14" width="120" height="52" rx="7"/><text class="t" x="476" y="36" text-anchor="middle">Blocking finds</text><text class="s" x="476" y="50" text-anchor="middle">candidate pairs</text>
+    <rect class="box" x="552" y="14" width="120" height="52" rx="7"/><text class="t" x="612" y="36" text-anchor="middle">Score each pair</text><text class="s" x="612" y="50" text-anchor="middle">on 25 fields</text>
+    <path class="arw" d="M128 40 L142 40"/><path class="arw" d="M264 40 L278 40"/><path class="arw" d="M400 40 L414 40"/><path class="arw" d="M536 40 L550 40"/>
+    <path class="arw" d="M612 66 L612 106"/>
+    <polygon class="dia" points="570,136 612,108 654,136 612,164"/><text class="t" x="612" y="134" text-anchor="middle">Living</text><text class="t" x="612" y="146" text-anchor="middle">person?</text>
+    <path class="arw" d="M570 136 L538 136"/><text class="lb" x="555" y="129" text-anchor="middle">Yes</text>
+    <rect class="box" x="416" y="110" width="120" height="52" rx="7"/><text class="t" x="476" y="132" text-anchor="middle">Masked hint to</text><text class="s" x="476" y="146" text-anchor="middle">both tree owners</text>
+    <path class="arw" d="M416 136 L384 136"/>
+    <polygon class="dia" points="298,136 340,108 382,136 340,164"/><text class="t" x="340" y="134" text-anchor="middle">Both</text><text class="t" x="340" y="146" text-anchor="middle">accept?</text>
+    <path class="arw" d="M298 136 L266 136"/><text class="lb" x="283" y="129" text-anchor="middle">Yes</text>
+    <rect class="ol" x="144" y="110" width="120" height="52" rx="7"/><text class="t" x="204" y="132" text-anchor="middle">Confirmed link</text><text class="s" x="204" y="146" text-anchor="middle">between records</text>
+    <path class="arw" d="M340 164 L340 188"/><text class="lb" x="348" y="180">No</text>
+    <rect class="box" x="280" y="190" width="120" height="46" rx="7"/><text class="t" x="340" y="209" text-anchor="middle">Silent decline</text><text class="s" x="340" y="223" text-anchor="middle">no link is made</text>
+    <path class="arw" d="M612 164 L612 188"/><text class="lb" x="620" y="180">No</text>
+    <rect class="box" x="552" y="190" width="120" height="46" rx="7"/><text class="t" x="612" y="209" text-anchor="middle">Admin review</text><text class="s" x="612" y="223" text-anchor="middle">merge, reject, defer</text>
+    <path class="arw" d="M612 236 L612 256 L204 256 L204 164"/><text class="lb" x="420" y="251" text-anchor="middle">merge</text>
+    <path class="arw" d="M144 136 L130 136"/>
+    <rect class="box" x="8" y="110" width="120" height="58" rx="7"/><text class="t" x="68" y="129" text-anchor="middle">Palestine Tree</text><text class="s" x="68" y="143" text-anchor="middle">overlay updated</text><text class="s" x="68" y="156" text-anchor="middle">owners notified</text>
+    <text class="s" x="8" y="284">Automatic merging is switched off by default. High scores still go to review until precision is measured.</text>
+  </svg>
+  <figcaption>Figure 7. The matching flow. Any confirmed link can be revoked later, which removes it from the overlay.</figcaption>
+  </figure>
+  <h2>Roles and what each can do</h2>
+  <table>
+    <thead><tr><th style="width:120px">Role</th><th style="width:170px">Who</th><th>Can do</th></tr></thead>
+    <tr><td class="k">Guest</td><td>Not signed in</td><td>Read the public information pages and sign up</td></tr>
+    <tr><td class="k">Registered user</td><td>Any signed-in account</td><td>Create trees, search, verify identity, request access to other trees</td></tr>
+    <tr><td class="k">Tree owner</td><td>The creator of a tree</td><td>Everything on the tree; approve or reject access requests; accept or decline match hints; place privacy holds; import and export</td></tr>
+    <tr><td class="k">Collaborator</td><td>Approved member with write access</td><td>Add and edit people, relationships, stories, photos and documents</td></tr>
+    <tr><td class="k">Read-only member</td><td>Approved member with read access</td><td>See the full tree, including details of living people</td></tr>
+    <tr><td class="k">Administrator</td><td>Account with the admin flag</td><td>Review matches, review identity documents, edit villages and village pages</td></tr>
+  </table>
+</div>
+
+<!-- ============================== 9 QUALITY ============================== -->
+<div class="section">
+  <div class="eyebrow">9 · Quality, testing and delivery</div>
+  <h1>How changes are checked and shipped</h1>
+  <h2>Automated tests</h2>
+  <table>
+    <thead><tr><th style="width:120px">Suite</th><th style="width:160px">Size</th><th>What it covers</th></tr></thead>
+    <tr><td class="k">Unit tests</td><td>19 files, 116 cases</td><td>GEDCOM parsing and export, phonetic rules and their parity with SQL, privacy helpers, password policy, error messages, tree layout rules</td></tr>
+    <tr><td class="k">Database tests</td><td>17 pgTAP files; 183 assertions passed in the last recorded run, 12 July 2026</td><td>Row-level security, living-person masking, search masking, feature building, blocking, scoring, review views and link functions</td></tr>
+    <tr><td class="k">End-to-end tests</td><td>6 Playwright specs</td><td>Public pages, page access for guests and users, private items, admin merge, reject and defer, owner accepting a connection</td></tr>
+  </table>
+  <h2>GitHub workflows</h2>
+  <table>
+    <thead><tr><th style="width:150px">Workflow</th><th style="width:170px">When it runs</th><th>What it does</th></tr></thead>
+    <tr><td class="k">CI</td><td>Every push and pull request</td><td>Installs with a frozen lockfile, type-checks, lints and builds the web app</td></tr>
+    <tr><td class="k">Deploy</td><td>After CI passes on main, or by hand</td><td>Connects to the server by SSH, resets to main, installs, builds, restarts the service and runs a health check</td></tr>
+    <tr><td class="k">Integration tests</td><td>Pull requests from people with write access</td><td>Starts Supabase locally, builds the app and runs Playwright</td></tr>
+    <tr><td class="k">Release and versions</td><td>Changesets and release tags</td><td>Version bumps and changelog</td></tr>
+  </table>
+  <div class="callout small"><b>Pushing to main deploys to production.</b> Database migrations are not part of the deploy. A migration must be applied to Supabase before the code that needs it reaches main.</div>
+  <h2>Repository layout</h2>
+  <table>
+    <tr><td class="k" style="width:210px">apps/web</td><td>Next.js app: pages, components, data layer, tests</td></tr>
+    <tr><td class="k">apps/database/supabase/migrations</td><td>48 ordered SQL migrations</td></tr>
+    <tr><td class="k">apps/database/supabase/tests</td><td>pgTAP database tests</td></tr>
+    <tr><td class="k">apps/database/supabase/demo</td><td>Local demo seed: accounts, trees, matches and verifications</td></tr>
+    <tr><td class="k">docs</td><td>Matching engine plan, auth notes, loop log and this report</td></tr>
+    <tr><td class="k">scripts/walkthrough</td><td>Scripts that record the product walkthrough video</td></tr>
+    <tr><td class="k">.github/workflows</td><td>CI, deploy, integration tests, release</td></tr>
+  </table>
+</div>
+
+<!-- ============================== 10 GAPS ============================== -->
+<div class="section">
+  <div class="eyebrow">10 · Gaps, risks and next steps</div>
+  <h1>What to fix or decide before launch</h1>
+  <table>
+    <thead><tr><th style="width:18px">#</th><th style="width:160px">Finding</th><th>Why it matters</th><th style="width:165px">Suggested action</th><th style="width:56px">Priority</th></tr></thead>
+    <tr><td>1</td><td>GEDCOM export includes living people</td><td>Any signed-in user can export a public tree, including birth years and villages of living relatives</td><td>Filter living people from shared exports; check export rights on the server</td><td><span class="chip no">High</span></td></tr>
+    <tr><td>2</td><td>Two definitions of “living”</td><td>The people list uses a flag; search uses an age rule. They can disagree</td><td>Use the database age rule everywhere</td><td><span class="chip no">High</span></td></tr>
+    <tr><td>3</td><td>Tree chart loads life data without masking</td><td>Non-members of a public tree may see living people’s details on the chart</td><td>Apply the same mask as the people list</td><td><span class="chip no">High</span></td></tr>
+    <tr><td>4</td><td>Views of private data are not logged</td><td>The privacy policy promises logged access to identity documents</td><td>Add an access log and record ID document views first</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>5</td><td>Access logic lives in several places</td><td>Rules can drift between the database helper, the search function and the web code</td><td>Make one database function the single source</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>6</td><td>Contact by request is not built</td><td>Families cannot reach each other after a match</td><td>Wire the existing relay table to a request screen</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>7</td><td>No moderator role or appeal path</td><td>Every review falls on platform administrators, who can all open ID documents</td><td>Decide roles, then add a moderator role with narrower rights</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>8</td><td>Contribution to the Cause is open for living people</td><td>Political details about living people could be published in public trees</td><td>Keep the field for deceased people only, or remove it</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>9</td><td>Matching batch has no schedule</td><td>Matches only appear when someone runs the batch</td><td>Add a nightly scheduled job</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>10</td><td>Hosting region and AI provider terms not documented</td><td>The law that applies and what providers keep are unknown</td><td>Record the region and provider terms in the privacy policy</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>11</td><td>Privacy contact email is a placeholder</td><td>Users cannot exercise their data rights</td><td>Set a real address before launch</td><td><span class="chip part">Medium</span></td></tr>
+    <tr><td>12</td><td>Project docs are out of date</td><td>The README and progress tracker describe an earlier stage</td><td>Refresh them from this report</td><td><span class="chip ok">Low</span></td></tr>
+  </table>
+  <h2>Decisions needed from the steering group</h2>
+  <ol>
+    <li><b>Shared people.</b> Who approves when one person sits in several family trees.</li>
+    <li><b>Villages and places.</b> Who builds and maintains the list, and which sources count.</li>
+    <li><b>Moderators.</b> How many, which languages, who appoints them, and where an appeal goes.</li>
+    <li><b>Hosting.</b> Which country, which law, and what AI providers may keep.</li>
+    <li><b>Contribution to the Cause.</b> Remove the field, or keep it only for deceased people.</li>
+  </ol>
+</div>
+
+<!-- ============================== APPENDICES ============================== -->
+<div class="section">
+  <div class="eyebrow">Appendix A</div>
+  <h1>Database table inventory</h1>
+  <table class="compact">
+    <thead><tr><th style="width:200px">Table</th><th>Purpose</th></tr></thead>
+    <tr><td class="k">profiles</td><td>One row per account: display names, language, admin flag</td></tr>
+    <tr><td class="k">trees</td><td>A family tree, its owner and whether it is public</td></tr>
+    <tr><td class="k">tree_members</td><td>Members, roles and access requests with proof</td></tr>
+    <tr><td class="k">persons</td><td>A person in a tree</td></tr>
+    <tr><td class="k">person_names</td><td>Arabic and English names with normalised and phonetic forms</td></tr>
+    <tr><td class="k">events</td><td>Birth, death, marriage and other events with date and place</td></tr>
+    <tr><td class="k">families</td><td>A couple, and the unit children belong to</td></tr>
+    <tr><td class="k">family_children</td><td>Links a child to a family, with pedigree type</td></tr>
+    <tr><td class="k">places</td><td>Villages, towns and cities with districts and coordinates</td></tr>
+    <tr><td class="k">place_profiles</td><td>Village history pages, edited by administrators</td></tr>
+    <tr><td class="k">person_profiles</td><td>Achievements and contribution to the cause</td></tr>
+    <tr><td class="k">person_attachments</td><td>Photos and documents attached to a person</td></tr>
+    <tr><td class="k">identity_verifications</td><td>ID check requests and their review</td></tr>
+    <tr><td class="k">match_paths</td><td>Cached relationship paths, stored without names</td></tr>
+    <tr><td class="k">name_variants</td><td>Dictionary of name spellings</td></tr>
+    <tr><td class="k">match_features, match_features_dirty</td><td>Per-person matching features and the change queue</td></tr>
+    <tr><td class="k">match_block_keys, match_block_skips</td><td>Blocking keys and skipped oversized groups</td></tr>
+    <tr><td class="k">matches</td><td>Scored candidate pairs, admin only</td></tr>
+    <tr><td class="k">matching_runs, app_settings</td><td>Batch run history and engine settings, including the auto-merge switch</td></tr>
+    <tr><td class="k">person_privacy_holds</td><td>Owner opt-outs that exclude a person from matching</td></tr>
+    <tr><td class="k">eval_pairs, eval_runs</td><td>Labelled pairs and results for measuring match quality</td></tr>
+    <tr><td class="k">person_links, merge_log</td><td>Confirmed links between records and the undo log</td></tr>
+    <tr><td class="k">match_hints</td><td>Masked accept or decline queue for tree owners</td></tr>
+    <tr><td class="k">match_audit</td><td>Log of every match status change</td></tr>
+    <tr><td class="k">notifications</td><td>In-app notices for owners</td></tr>
+    <tr><td class="k">contact_relay</td><td>Anonymous, expiring contact tokens; not yet used by the app</td></tr>
+    <tr><td class="k">overlay_refresh_queue</td><td>Deferred refresh of the Palestine Tree overlay</td></tr>
+    <tr><td class="k">private_items, items, content_blog_posts, content_blog_post_comments</td><td>Left over from the starter template; candidates for removal</td></tr>
+  </table>
+  <p class="small muted">Views: match_review_cards, v_match_explanations, and the materialised view person_identity_groups that forms the Palestine Tree overlay.</p>
+
+</div>
+
+<div class="section">
+  <div class="eyebrow">Appendix B</div>
+  <h1>Glossary</h1>
+  <table>
+    <tr><td class="k" style="width:150px">PFT</td><td>Palestine Family Tree. The combined tree formed by linking all individual trees.</td></tr>
+    <tr><td class="k">IFT</td><td>Individual Family Tree. One user’s own tree.</td></tr>
+    <tr><td class="k">VCC</td><td>Village, city or camp. A place of origin.</td></tr>
+    <tr><td class="k">GEDCOM</td><td>The standard file format for exchanging genealogy data. Juthoor uses version 7.</td></tr>
+    <tr><td class="k">Row-level security</td><td>Database rules that decide, row by row, what each user may read or change.</td></tr>
+    <tr><td class="k">RPC</td><td>A database function called through the API.</td></tr>
+    <tr><td class="k">Fellegi-Sunter</td><td>A statistical method for deciding whether two records describe the same person.</td></tr>
+    <tr><td class="k">Blocking</td><td>Grouping records by shared keys so only likely pairs are compared.</td></tr>
+    <tr><td class="k">pgTAP</td><td>A testing framework that runs tests inside PostgreSQL.</td></tr>
+    <tr><td class="k">Server action</td><td>A server function called from a form or button in Next.js.</td></tr>
+  </table>
+</div>
+</body>
+</html>
