@@ -1,7 +1,7 @@
 -- pgTAP: score_pair refined gate — score_pct, disagreement vetoes, cluster
 -- gating, decision (plan §4, B9b).
 BEGIN;
-SELECT plan(6);
+SELECT plan(9);
 
 INSERT INTO auth.users (id, email, aud, role) VALUES
   ('d1000000-0000-0000-0000-000000000001', 'o1@test.juthoor', 'authenticated', 'authenticated'),
@@ -70,16 +70,25 @@ SELECT ok((SELECT breakdown->'meta'->'vetoes' FROM public.score_pair(
     'f0000000-0000-0000-0000-0000000000b1','f0000000-0000-0000-0000-0000000000b2')) @> '["mother_disagree"]',
   'present-but-different mother is vetoed');
 
--- 3. with a reachable threshold, a rich cross-tree duplicate auto-links
-UPDATE public.app_settings SET auto_merge_threshold = 100;
+-- 3. a rich cross-tree duplicate (both deceased) auto-links at the 90% threshold
 SELECT is((SELECT breakdown->'meta'->>'decision' FROM public.score_pair(
     'f0000000-0000-0000-0000-0000000000a1','f0000000-0000-0000-0000-0000000000a2')),
-  'auto_link', 'rich duplicate with non-patriline corroborator auto-links (threshold 100)');
+  'auto_link', 'rich duplicate with non-patriline corroborator auto-links');
+SELECT is((SELECT (breakdown->'meta'->>'threshold')::numeric FROM public.score_pair(
+    'f0000000-0000-0000-0000-0000000000a1','f0000000-0000-0000-0000-0000000000a2')),
+  0.90, 'a deceased pair is judged against the 90% threshold');
 
--- 4. a living person never auto-links
+-- 4. a pair with a living person auto-links too (AIO: link at 76%, then notify the owners)
 SELECT is((SELECT breakdown->'meta'->>'decision' FROM public.score_pair(
     'f0000000-0000-0000-0000-0000000000c1','f0000000-0000-0000-0000-0000000000c2')),
-  'review', 'a living person is capped at review');
+  'auto_link', 'a living pair auto-links when it meets the living threshold');
+SELECT is((SELECT (breakdown->'meta'->>'threshold')::numeric FROM public.score_pair(
+    'f0000000-0000-0000-0000-0000000000c1','f0000000-0000-0000-0000-0000000000c2')),
+  0.76, 'a living pair is judged against the 76% threshold');
+UPDATE public.app_settings SET link_threshold_living = 0.5;
+SELECT is((SELECT (breakdown->'meta'->>'threshold')::numeric FROM public.score_pair(
+    'f0000000-0000-0000-0000-0000000000c1','f0000000-0000-0000-0000-0000000000c2')),
+  0.5, 'the living threshold is read from app_settings');
 
 -- 5. patriline-only match (no non-patriline corroborator) stays review
 SELECT is((SELECT breakdown->'meta'->>'decision' FROM public.score_pair(
