@@ -1,6 +1,6 @@
 -- Matching follows the All-in-One (decisions D4, Q3, D2, 24 Oct 2026).
 --
---   1. Thresholds are percentages of the available evidence (score_pct):
+--   1. Thresholds are percentages of the full 325-point scale (score_pct; 275 when either person is living):
 --      90% for deceased pairs, 76% when either person is living. They replace the raw
 --      450-point threshold, which the scorer (maximum 343) could never reach.
 --   2. Living pairs link automatically; both tree owners are then notified and can
@@ -71,7 +71,7 @@ DECLARE
   v_children_delta int;
   -- clusters
   patri_max int; patri_pts int; mat_max int; mat_pts int; sp_max int; anc_max int; anc_pts int;
-  v_max int; v_score_pct numeric := 0; v_clusters int := 0; v_nonpatri boolean := false;
+  v_max int; v_score_pct numeric := 0; v_evidence_pct numeric := 0; v_full int; v_either_living boolean; v_clusters int := 0; v_nonpatri boolean := false;
   patri_ok boolean; mat_ok boolean; sp_ok boolean; anc_ok boolean;
   v_thr_dec numeric; v_thr_liv numeric; v_thr numeric; v_decision text;
   both_spouses boolean;
@@ -117,7 +117,7 @@ BEGIN
   v_score := p_given+p_surname+p_father+p_mother+p_pgf+p_pgm+p_mgf+p_mgm+p_spouse
            + p_origin+p_birth+p_bplace+p_death+p_dplace+p_email+p_children;
 
-  -- ── evidence clusters (num_children excluded from score_pct) ──────────────
+  -- ── evidence clusters (num_children excluded from evidence_pct) ──────────────
   patri_max := (CASE WHEN public.mf_present(a.given_norm,b.given_norm)   THEN 10 ELSE 0 END)
              + (CASE WHEN public.mf_present(a.father_norm,b.father_norm) THEN 10 ELSE 0 END)
              + (CASE WHEN public.mf_present(a.pgf_norm,b.pgf_norm)       THEN 25 ELSE 0 END)
@@ -139,8 +139,16 @@ BEGIN
   v_max := patri_max + mat_max + sp_max + anc_max;
   IF v_max > 0 THEN
     -- +2 collapse bonuses can push clustered pts slightly over the clustered max.
-    v_score_pct := LEAST(1.0, round((patri_pts + mat_pts + p_spouse + anc_pts)::numeric / v_max, 3));
+    v_evidence_pct := LEAST(1.0, round((patri_pts + mat_pts + p_spouse + anc_pts)::numeric / v_max, 3));
   END IF;
+
+  -- score_pct is the share of the FULL scale, so a field missing on either side counts as zero
+  -- (AIO 3.6). The full scale is 325 points; death date and place are left out when either
+  -- person is living (275), because a living person cannot match on them.
+  v_either_living := coalesce(a.is_living, false) OR coalesce(b.is_living, false);
+  v_full := CASE WHEN v_either_living THEN 275 ELSE 325 END;
+  v_score_pct := LEAST(1.0, round(
+    (v_score - CASE WHEN v_either_living THEN p_death + p_dplace ELSE 0 END)::numeric / v_full, 3));
 
   patri_ok := patri_max > 0 AND patri_pts >= 0.6 * patri_max;
   mat_ok   := mat_max   > 0 AND mat_pts   >= 0.6 * mat_max;
@@ -165,12 +173,12 @@ BEGIN
   IF a.birth_year IS NOT NULL AND b.birth_year IS NOT NULL AND abs(a.birth_year-b.birth_year) > 10 AND abs(a.birth_year-b.birth_year) <= 15 THEN v_vetoes := array_append(v_vetoes,'birth_year_disagree'); END IF;
 
   -- ── decision ──────────────────────────────────────────────────────────────
-  -- AIO section 3.6 thresholds, as a share of the evidence available for the pair:
+  -- AIO section 3.6 thresholds, as a share of the full scale (a missing field counts as zero):
   -- 90% when both people are deceased, 76% when either is living (D4).
   SELECT link_threshold_deceased, link_threshold_living INTO v_thr_dec, v_thr_liv FROM public.app_settings LIMIT 1;
   v_thr_dec := COALESCE(v_thr_dec, 0.90);
   v_thr_liv := COALESCE(v_thr_liv, 0.76);
-  v_thr := CASE WHEN a.is_living OR b.is_living THEN v_thr_liv ELSE v_thr_dec END;
+  v_thr := CASE WHEN v_either_living THEN v_thr_liv ELSE v_thr_dec END;
 
   -- The vetoes and the two-evidence-group rule stay. A living person no longer
   -- blocks the decision (Q3: living pairs link, then both owners are notified).
@@ -185,7 +193,7 @@ BEGIN
 
   RETURN QUERY SELECT v_score, jsonb_build_object(
     'meta', jsonb_build_object(
-      'version','frs-v2','score',v_score,'max_attainable',v_max,'score_pct',v_score_pct,'threshold',v_thr,
+      'version','frs-v2','score',v_score,'max_attainable',v_max,'score_pct',v_score_pct,'evidence_pct',v_evidence_pct,'full_scale',v_full,'threshold',v_thr,
       'clusters_agreed',v_clusters,'decision',v_decision,
       'vetoes',to_jsonb(v_vetoes),'privacy',v_privacy),
     'params', jsonb_build_object(
