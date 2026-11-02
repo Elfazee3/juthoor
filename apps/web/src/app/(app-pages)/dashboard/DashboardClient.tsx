@@ -196,7 +196,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                 />
                 <QuickAction
                   icon={Upload}
-                  label={t('استورد GEDCOM', 'Import GEDCOM')}
+                  label={t('استورد شجرة من منصة أخرى', 'Import a tree from another platform')}
                   href={`/tree/${data.treeId}`}
                 />
                 <QuickAction
