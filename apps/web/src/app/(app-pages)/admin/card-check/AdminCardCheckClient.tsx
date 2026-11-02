@@ -4,24 +4,31 @@ import { useState } from 'react';
 import { Check, ExternalLink, FileText, Inbox, Loader2, ShieldCheck, X } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import {
-  rejectUnrwaCard,
-  verifyUnrwaCard,
-  type UnrwaCardRequest,
-} from '@/data/admin/unrwaCards';
+  rejectIdentifierCard,
+  verifyIdentifierCard,
+  type IdentifierCardRequest,
+} from '@/data/admin/identifierCards';
 
-export function AdminUnrwaCardsClient({ initialRequests }: { initialRequests: UnrwaCardRequest[] }) {
+function rowKey(r: IdentifierCardRequest) {
+  return `${r.personId}:${r.kind}`;
+}
+
+export function AdminCardCheckClient({ initialRequests }: { initialRequests: IdentifierCardRequest[] }) {
   const { t, dir, locale } = useLocale();
   const [requests, setRequests] = useState(initialRequests);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function decide(r: UnrwaCardRequest, approve: boolean) {
-    setBusyId(r.personId);
+  async function decide(r: IdentifierCardRequest, approve: boolean) {
+    setBusyId(rowKey(r));
     setError(null);
     try {
-      if (approve) await verifyUnrwaCard({ personId: r.personId, attachmentId: r.attachmentId });
-      else await rejectUnrwaCard({ personId: r.personId });
-      setRequests((rows) => rows.filter((x) => x.personId !== r.personId));
+      if (approve) {
+        await verifyIdentifierCard({ personId: r.personId, kind: r.kind, attachmentId: r.attachmentId });
+      } else {
+        await rejectIdentifierCard({ personId: r.personId, kind: r.kind });
+      }
+      setRequests((rows) => rows.filter((x) => rowKey(x) !== rowKey(r)));
     } catch (e) {
       setError(e instanceof Error ? e.message : t('فشل الإجراء.', 'Action failed.'));
     } finally {
@@ -37,12 +44,12 @@ export function AdminUnrwaCardsClient({ initialRequests }: { initialRequests: Un
           {t('التحقق من البطاقات', 'Card check')}
         </span>
         <h1 className="text-3xl font-bold text-[var(--jt-olive-900)]" style={{ fontFamily: 'var(--jt-font-display)' }}>
-          {t('أرقام بطاقات الأونروا', 'UNRWA card numbers')}
+          {t('أرقام البطاقات', 'Card numbers')}
         </h1>
         <p className="mt-1 text-sm text-[var(--jt-stone-600)]">
           {t(
-            'افتح نسخة البطاقة وتأكد أن الرقم المُدخل يطابق الرقم الظاهر عليها. لا يربط الرقمُ أحدًا إلا بعد الموافقة.',
-            'Open the card copy and check that the number entered is the number on the card. A number links no one until you approve it.',
+            'افتح نسخة البطاقة (الأونروا أو البطاقة العائلية) وتأكد أن الرقم المُدخل يطابق الرقم الظاهر عليها. لا يربط الرقمُ أحدًا إلا بعد الموافقة.',
+            'Open the card copy (UNRWA or family card) and check that the number entered is the number on the card. A number links no one until you approve it.',
           )}
         </p>
         <p className="mt-1 text-xs text-[var(--jt-stone-500)]">
@@ -63,13 +70,15 @@ export function AdminUnrwaCardsClient({ initialRequests }: { initialRequests: Un
         <ul className="space-y-4">
           {requests.map((r) => (
             <li
-              key={r.personId}
+              key={rowKey(r)}
               className="rounded-3xl border border-[var(--jt-stone-200)] bg-[var(--card)] p-5 shadow-[var(--jt-shadow-sm)]"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-bold text-[var(--jt-olive-900)]">{r.personName ?? t('شخص', 'Person')}</p>
                   <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--jt-stone-500)]">
+                    {r.kind === 'unrwa_card' ? t('بطاقة الأونروا', 'UNRWA card') : t('البطاقة العائلية 1948', '1948 family card')}
+                    {' · '}
                     {r.treeName ?? '—'}
                     {' · '}
                     {new Date(r.uploadedAt).toLocaleDateString(locale === 'ar' ? 'ar' : 'en')}
@@ -85,7 +94,7 @@ export function AdminUnrwaCardsClient({ initialRequests }: { initialRequests: Un
                   <button
                     type="button"
                     onClick={() => decide(r, false)}
-                    disabled={busyId === r.personId}
+                    disabled={busyId === rowKey(r)}
                     className="inline-flex items-center gap-1 rounded-full border border-[var(--jt-terra-200)] px-3 py-1.5 text-xs font-semibold text-[var(--jt-terra-700)] transition-colors hover:bg-[var(--jt-terra-50)] disabled:opacity-50"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -94,10 +103,10 @@ export function AdminUnrwaCardsClient({ initialRequests }: { initialRequests: Un
                   <button
                     type="button"
                     onClick={() => decide(r, true)}
-                    disabled={busyId === r.personId}
+                    disabled={busyId === rowKey(r)}
                     className="inline-flex items-center gap-1 rounded-full bg-[var(--jt-olive-700)] px-3 py-1.5 text-xs font-semibold text-[var(--jt-stone-50)] transition-colors hover:bg-[var(--jt-olive-800)] disabled:opacity-50"
                   >
-                    {busyId === r.personId ? (
+                    {busyId === rowKey(r) ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Check className="h-3.5 w-3.5" />

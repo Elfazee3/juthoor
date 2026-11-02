@@ -1,7 +1,7 @@
 -- pgTAP: an UNRWA card number counts only after a Platform Administrator verified it against the
 -- attached card copy (D8, D9). Nobody else can set, keep or fake the verification.
 BEGIN;
-SELECT plan(18);
+SELECT plan(21);
 
 INSERT INTO auth.users (id, email, aud, role) VALUES
   ('b7000000-0000-0000-0000-000000000001', 'admin@test.juthoor', 'authenticated', 'authenticated'),
@@ -44,9 +44,9 @@ RESET ROLE;
 -- 2. the tree owner cannot verify, or fake it with a direct update
 SET LOCAL role authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000002","role":"authenticated"}', true);
-SELECT throws_ok($$ SELECT public.verify_unrwa_card('d7000000-0000-0000-0000-000000000001','a7000000-0000-0000-0000-000000000001') $$,
+SELECT throws_ok($$ SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000001','unrwa_card','a7000000-0000-0000-0000-000000000001') $$,
   '42501', 'not_authorized', 'a tree owner cannot verify a card');
-SELECT throws_ok($$ SELECT * FROM public.list_unrwa_card_queue() $$,
+SELECT throws_ok($$ SELECT * FROM public.list_identifier_queue() $$,
   '42501', 'not_authorized', 'a tree owner cannot read the verification queue');
 UPDATE public.person_identifiers
    SET verified_at = now(), verified_attachment_id = 'a7000000-0000-0000-0000-000000000001'
@@ -58,14 +58,14 @@ SELECT is((SELECT verified_at FROM public.person_identifiers WHERE person_id = '
 -- 3. the administrator sees both numbers in the queue and verifies them
 SET LOCAL role authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-SELECT is((SELECT count(*)::int FROM public.list_unrwa_card_queue()), 2, 'both numbers wait in the queue');
-SELECT throws_ok($$ SELECT public.verify_unrwa_card('d7000000-0000-0000-0000-000000000001','a7000000-0000-0000-0000-000000000002') $$,
+SELECT is((SELECT count(*)::int FROM public.list_identifier_queue()), 2, 'both numbers wait in the queue');
+SELECT throws_ok($$ SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000001','unrwa_card','a7000000-0000-0000-0000-000000000002') $$,
   'P0002', 'no_card_copy', 'the copy must belong to the person');
-SELECT public.verify_unrwa_card('d7000000-0000-0000-0000-000000000001','a7000000-0000-0000-0000-000000000001');
-SELECT is((SELECT count(*)::int FROM public.list_unrwa_card_queue()), 1, 'a verified number leaves the queue');
+SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000001','unrwa_card','a7000000-0000-0000-0000-000000000001');
+SELECT is((SELECT count(*)::int FROM public.list_identifier_queue()), 1, 'a verified number leaves the queue');
 SELECT is(public.identifier_perfect_match('d7000000-0000-0000-0000-000000000001','d7000000-0000-0000-0000-000000000002'),
   NULL, 'one verified copy is not enough: both people need one');
-SELECT public.verify_unrwa_card('d7000000-0000-0000-0000-000000000002','a7000000-0000-0000-0000-000000000002');
+SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000002','unrwa_card','a7000000-0000-0000-0000-000000000002');
 RESET ROLE;
 SELECT is(public.identifier_perfect_match('d7000000-0000-0000-0000-000000000001','d7000000-0000-0000-0000-000000000002'),
   'unrwa_card', 'both verified: a perfect match');
@@ -91,7 +91,7 @@ SELECT is(public.identifier_perfect_match('d7000000-0000-0000-0000-000000000001'
 UPDATE public.person_identifiers SET value = 'AB-1234' WHERE person_id = 'd7000000-0000-0000-0000-000000000001';
 SET LOCAL role authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-SELECT public.verify_unrwa_card('d7000000-0000-0000-0000-000000000001','a7000000-0000-0000-0000-000000000001');
+SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000001','unrwa_card','a7000000-0000-0000-0000-000000000001');
 RESET ROLE;
 UPDATE public.person_attachments SET storage_path = 'c7000000-0000-0000-0000-000000000001/replaced.pdf' WHERE id = 'a7000000-0000-0000-0000-000000000001';
 SELECT is((SELECT verified_attachment_id FROM public.person_identifiers WHERE person_id = 'd7000000-0000-0000-0000-000000000001'),
@@ -102,17 +102,34 @@ SELECT is((SELECT count(*)::int FROM public.person_identifiers WHERE verified_at
 -- 6. reject takes a number out of the queue; a new copy puts it back
 SET LOCAL role authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-SELECT public.reject_unrwa_card('d7000000-0000-0000-0000-000000000001');
-SELECT is((SELECT count(*)::int FROM public.list_unrwa_card_queue() WHERE person_id = 'd7000000-0000-0000-0000-000000000001'),
+SELECT public.reject_identifier('d7000000-0000-0000-0000-000000000001','unrwa_card');
+SELECT is((SELECT count(*)::int FROM public.list_identifier_queue() WHERE person_id = 'd7000000-0000-0000-0000-000000000001'),
   0, 'a rejected number leaves the queue');
 RESET ROLE;
 INSERT INTO public.person_attachments (person_id, kind, tag, storage_path, mime_type, size_bytes)
   VALUES ('d7000000-0000-0000-0000-000000000001', 'document', 'unrwa_card', 'c7000000-0000-0000-0000-000000000001/new.pdf', 'application/pdf', 1000);
 SET LOCAL role authenticated;
 SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
-SELECT is((SELECT count(*)::int FROM public.list_unrwa_card_queue() WHERE person_id = 'd7000000-0000-0000-0000-000000000001'),
+SELECT is((SELECT count(*)::int FROM public.list_identifier_queue() WHERE person_id = 'd7000000-0000-0000-0000-000000000001'),
   1, 'a new card copy puts the number back in the queue');
 RESET ROLE;
+
+-- 7. the 1948 family card works the same way, with its own card copy
+INSERT INTO public.person_identifiers (person_id, kind, value)
+  VALUES ('d7000000-0000-0000-0000-000000000002', 'family_card_1948', 'FC-12');
+INSERT INTO public.person_attachments (id, person_id, kind, tag, storage_path, mime_type, size_bytes)
+  VALUES ('a7000000-0000-0000-0000-000000000003', 'd7000000-0000-0000-0000-000000000002', 'document', 'family_card',
+          'c7000000-0000-0000-0000-000000000002/fc.pdf', 'application/pdf', 1000);
+SET LOCAL role authenticated;
+SELECT set_config('request.jwt.claims','{"sub":"b7000000-0000-0000-0000-000000000001","role":"authenticated"}', true);
+SELECT is((SELECT kind FROM public.list_identifier_queue() WHERE person_id = 'd7000000-0000-0000-0000-000000000002'
+           AND kind = 'family_card_1948'), 'family_card_1948', 'a family-card number waits in the same queue');
+SELECT throws_ok($$ SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000002','family_card_1948','a7000000-0000-0000-0000-000000000002') $$,
+  'P0002', 'no_card_copy', 'a family-card number needs a copy tagged as a family card, not an UNRWA card');
+SELECT public.verify_identifier('d7000000-0000-0000-0000-000000000002','family_card_1948','a7000000-0000-0000-0000-000000000003');
+RESET ROLE;
+SELECT ok(public.person_identifier_verified('d7000000-0000-0000-0000-000000000002','family_card_1948'),
+  'the administrator verifies the family-card number');
 
 SELECT finish();
 ROLLBACK;

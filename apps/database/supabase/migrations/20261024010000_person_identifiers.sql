@@ -2,9 +2,10 @@
 -- perfect-match identifiers (All-in-One 3.6 and 5.7).
 --
 --   * person_identifiers stores the numbers (visible only to people who can write the tree).
---   * UNRWA: counts only when BOTH people have a copy of the card on file (attachment tag
---     'unrwa_card') that a Platform Administrator has checked against the number (D9). Anyone who
---     can edit a tree could otherwise type another person's number and attach any PDF.
+--   * A number counts only when BOTH people have a copy of the card on file (attachment tag
+--     'unrwa_card' for the UNRWA card, 'family_card' for the 1948 family card) that a Platform
+--     Administrator has checked against the number (D9). Anyone who can edit a tree could
+--     otherwise type another person's number and attach any PDF.
 --   * Family card: a card covers a whole household, so brothers and sisters share one number.
 --     It counts only when the given names also agree (spelling or phonetic).
 --   * A perfect match auto-links, whatever the score, unless a hard veto applies
@@ -26,8 +27,8 @@ CREATE TABLE IF NOT EXISTS public.person_identifiers (
   created_by  uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
-  -- UNRWA only: a Platform Administrator checked this number against the attached card copy.
-  -- Set and cleared only through verify_unrwa_card / reject_unrwa_card (see the trigger below).
+  -- A Platform Administrator checked this number against the attached card copy.
+  -- Set and cleared only through verify_identifier / reject_identifier (see the trigger below).
   verified_at            timestamptz,
   verified_by            uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   verified_attachment_id uuid REFERENCES public.person_attachments(id) ON DELETE SET NULL,
@@ -45,6 +46,16 @@ CREATE POLICY person_identifiers_writers ON public.person_identifiers
   WITH CHECK (public.is_admin() OR public.can_write_tree((SELECT p.tree_id FROM public.persons p WHERE p.id = person_id)));
 COMMENT ON TABLE public.person_identifiers IS
   'UNRWA card number and 1948 family-card number of a person (perfect-match identifiers, decision D8). Tree writers and admins only.';
+
+-- The card copy that proves each kind of number
+CREATE OR REPLACE FUNCTION public.identifier_tag_for_kind(p_kind text)
+RETURNS text LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
+  SELECT CASE p_kind WHEN 'unrwa_card' THEN 'unrwa_card' WHEN 'family_card_1948' THEN 'family_card' END;
+$$;
+CREATE OR REPLACE FUNCTION public.identifier_kind_for_tag(p_tag text)
+RETURNS text LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
+  SELECT CASE p_tag WHEN 'unrwa_card' THEN 'unrwa_card' WHEN 'family_card' THEN 'family_card_1948' END;
+$$;
 
 -- ── 2b. verification can only come from the RPCs below ───────────────────────
 -- Requests made as an ordinary user (roles authenticated / anon) can neither set the
@@ -76,7 +87,7 @@ CREATE TRIGGER trg_person_identifiers_guard_verification
   FOR EACH ROW EXECUTE FUNCTION public.person_identifiers_guard_verification();
 
 -- Replacing or retagging a verified card copy voids the check; a new card copy puts a rejected
--- number back in the queue.
+-- number of the same card back in the queue.
 CREATE OR REPLACE FUNCTION public.person_attachments_void_card_check()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
@@ -84,9 +95,9 @@ BEGIN
     UPDATE public.person_identifiers
        SET verified_at = NULL, verified_by = NULL, verified_attachment_id = NULL
      WHERE verified_attachment_id = OLD.id;
-  ELSIF NEW.tag::text = 'unrwa_card' THEN
+  ELSIF NEW.tag::text IN ('unrwa_card', 'family_card') THEN
     UPDATE public.person_identifiers SET rejected_at = NULL
-     WHERE person_id = NEW.person_id AND kind = 'unrwa_card';
+     WHERE person_id = NEW.person_id AND kind = public.identifier_kind_for_tag(NEW.tag::text);
   END IF;
   RETURN NULL;
 END $$;
@@ -97,16 +108,16 @@ CREATE TRIGGER trg_person_attachments_void_card_check
 
 -- ── 3. the perfect-match test ────────────────────────────────────────────────
 -- A card copy counts only after a Platform Administrator verified the number against it.
-CREATE OR REPLACE FUNCTION public.person_unrwa_card_verified(p_person uuid)
+CREATE OR REPLACE FUNCTION public.person_identifier_verified(p_person uuid, p_kind text)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.person_identifiers i
     JOIN public.person_attachments a ON a.id = i.verified_attachment_id
-    WHERE i.person_id = p_person AND i.kind = 'unrwa_card' AND i.verified_at IS NOT NULL
-      AND a.person_id = p_person AND a.tag::text = 'unrwa_card');
+    WHERE i.person_id = p_person AND i.kind = p_kind AND i.verified_at IS NOT NULL
+      AND a.person_id = p_person AND a.tag::text = public.identifier_tag_for_kind(p_kind));
 $$;
-REVOKE ALL ON FUNCTION public.person_unrwa_card_verified(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.person_unrwa_card_verified(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.person_identifier_verified(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.person_identifier_verified(uuid, text) TO authenticated;
 
 -- 'unrwa_card' | 'family_card_1948' | NULL
 CREATE OR REPLACE FUNCTION public.identifier_perfect_match(p_a uuid, p_b uuid)
@@ -116,7 +127,7 @@ RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
       SELECT 1 FROM public.person_identifiers x
       JOIN public.person_identifiers y ON y.kind = x.kind AND y.value_norm = x.value_norm
       WHERE x.person_id = p_a AND y.person_id = p_b AND x.kind = 'unrwa_card' AND x.value_norm <> ''
-        AND public.person_unrwa_card_verified(p_a) AND public.person_unrwa_card_verified(p_b)
+        AND public.person_identifier_verified(p_a, 'unrwa_card') AND public.person_identifier_verified(p_b, 'unrwa_card')
     ) THEN 'unrwa_card'
     WHEN EXISTS (
       SELECT 1 FROM public.person_identifiers x
@@ -124,6 +135,7 @@ RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
       JOIN public.match_features fa ON fa.person_id = x.person_id
       JOIN public.match_features fb ON fb.person_id = y.person_id
       WHERE x.person_id = p_a AND y.person_id = p_b AND x.kind = 'family_card_1948' AND x.value_norm <> ''
+        AND public.person_identifier_verified(p_a, 'family_card_1948') AND public.person_identifier_verified(p_b, 'family_card_1948')
         AND ((fa.given_norm <> '' AND fa.given_norm = fb.given_norm)
           OR (fa.given_phon <> '' AND fa.given_phon = fb.given_phon))
     ) THEN 'family_card_1948'
@@ -132,44 +144,45 @@ RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
 $$;
 REVOKE ALL ON FUNCTION public.identifier_perfect_match(uuid, uuid) FROM PUBLIC;
 COMMENT ON FUNCTION public.identifier_perfect_match IS
-  'Perfect-match identifiers (D8): same UNRWA card number with a verified card copy on both people, or the same 1948 family-card number with the same given name.';
+  'Perfect-match identifiers (D8): same UNRWA card number, or the same 1948 family-card number with the same given name, with a verified card copy on both people.';
 
 -- ── 3b. the Platform Administrator's check (D9) ───────────────────────────────
-CREATE OR REPLACE FUNCTION public.verify_unrwa_card(p_person uuid, p_attachment uuid)
+CREATE OR REPLACE FUNCTION public.verify_identifier(p_person uuid, p_kind text, p_attachment uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF NOT public.is_admin() THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.person_attachments a
-                 WHERE a.id = p_attachment AND a.person_id = p_person AND a.tag::text = 'unrwa_card') THEN
+                 WHERE a.id = p_attachment AND a.person_id = p_person
+                   AND a.tag::text = public.identifier_tag_for_kind(p_kind)) THEN
     RAISE EXCEPTION 'no_card_copy' USING ERRCODE = 'P0002';
   END IF;
   UPDATE public.person_identifiers
      SET verified_at = now(), verified_by = auth.uid(), verified_attachment_id = p_attachment,
          rejected_at = NULL
-   WHERE person_id = p_person AND kind = 'unrwa_card';
-  IF NOT FOUND THEN RAISE EXCEPTION 'no_unrwa_number' USING ERRCODE = 'P0002'; END IF;
+   WHERE person_id = p_person AND kind = p_kind;
+  IF NOT FOUND THEN RAISE EXCEPTION 'no_number' USING ERRCODE = 'P0002'; END IF;
 END $$;
 
 -- The number does not match the card, or the copy is unreadable: take it out of the queue.
-CREATE OR REPLACE FUNCTION public.reject_unrwa_card(p_person uuid)
+CREATE OR REPLACE FUNCTION public.reject_identifier(p_person uuid, p_kind text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF NOT public.is_admin() THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501'; END IF;
   UPDATE public.person_identifiers
      SET verified_at = NULL, verified_by = NULL, verified_attachment_id = NULL, rejected_at = now()
-   WHERE person_id = p_person AND kind = 'unrwa_card';
-  IF NOT FOUND THEN RAISE EXCEPTION 'no_unrwa_number' USING ERRCODE = 'P0002'; END IF;
+   WHERE person_id = p_person AND kind = p_kind;
+  IF NOT FOUND THEN RAISE EXCEPTION 'no_number' USING ERRCODE = 'P0002'; END IF;
 END $$;
 
 -- Numbers waiting for a check: a card copy is attached, the number is neither verified nor rejected.
-CREATE OR REPLACE FUNCTION public.list_unrwa_card_queue()
-RETURNS TABLE (person_id uuid, tree_id uuid, tree_name text, person_name text,
+CREATE OR REPLACE FUNCTION public.list_identifier_queue()
+RETURNS TABLE (person_id uuid, kind text, tree_id uuid, tree_name text, person_name text,
                value text, attachment_id uuid, storage_path text, uploaded_at timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF NOT public.is_admin() THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501'; END IF;
   RETURN QUERY
-    SELECT i.person_id, p.tree_id, t.name::text,
+    SELECT i.person_id, i.kind, p.tree_id, t.name::text,
            (SELECT btrim(coalesce(n.given_name,'') || ' ' || coalesce(n.surname,''))
               FROM public.person_names n WHERE n.person_id = p.id ORDER BY n.is_primary DESC LIMIT 1),
            i.value, a.id, a.storage_path, a.created_at
@@ -177,34 +190,34 @@ BEGIN
       JOIN public.persons p ON p.id = i.person_id
       JOIN public.trees t ON t.id = p.tree_id
       JOIN LATERAL (SELECT x.id, x.storage_path, x.created_at FROM public.person_attachments x
-                    WHERE x.person_id = i.person_id AND x.tag::text = 'unrwa_card'
+                    WHERE x.person_id = i.person_id AND x.tag::text = public.identifier_tag_for_kind(i.kind)
                     ORDER BY x.created_at DESC LIMIT 1) a ON true
-     WHERE i.kind = 'unrwa_card' AND i.verified_at IS NULL AND i.rejected_at IS NULL
+     WHERE i.verified_at IS NULL AND i.rejected_at IS NULL
      ORDER BY a.created_at;
 END $$;
 
-REVOKE ALL ON FUNCTION public.verify_unrwa_card(uuid, uuid), public.reject_unrwa_card(uuid),
-  public.list_unrwa_card_queue() FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.verify_unrwa_card(uuid, uuid), public.reject_unrwa_card(uuid),
-  public.list_unrwa_card_queue() TO authenticated;
+REVOKE ALL ON FUNCTION public.verify_identifier(uuid, text, uuid), public.reject_identifier(uuid, text),
+  public.list_identifier_queue() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.verify_identifier(uuid, text, uuid), public.reject_identifier(uuid, text),
+  public.list_identifier_queue() TO authenticated;
 
 -- A Platform Administrator can open a card copy to check it, even in a private tree. Only files
--- tagged as UNRWA cards: the rest of the tree's documents stay private.
+-- tagged as UNRWA or family cards: the rest of the tree's documents stay private.
 -- (a function, because the administrator cannot read a private tree's attachment rows directly)
-CREATE OR REPLACE FUNCTION public.is_unrwa_card_file(p_path text)
+CREATE OR REPLACE FUNCTION public.is_identifier_card_file(p_path text)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (SELECT 1 FROM public.person_attachments a
-                 WHERE a.storage_path = p_path AND a.tag::text = 'unrwa_card');
+                 WHERE a.storage_path = p_path AND a.tag::text IN ('unrwa_card', 'family_card'));
 $$;
-REVOKE ALL ON FUNCTION public.is_unrwa_card_file(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.is_unrwa_card_file(text) TO authenticated;
+REVOKE ALL ON FUNCTION public.is_identifier_card_file(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_identifier_card_file(text) TO authenticated;
 DROP POLICY IF EXISTS pa_storage_admin_read_unrwa ON storage.objects;
 CREATE POLICY pa_storage_admin_read_unrwa ON storage.objects
   FOR SELECT TO authenticated
   USING (
     bucket_id = 'person-attachments'
     AND public.is_admin()
-    AND public.is_unrwa_card_file(storage.objects.name)
+    AND public.is_identifier_card_file(storage.objects.name)
   );
 
 -- ── 4. block-key pass 7 ──────────────────────────────────────────────────────

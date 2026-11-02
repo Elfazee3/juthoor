@@ -6,19 +6,18 @@ import { getCachedLoggedInUserIdOrNull } from '@/rsc-data/supabase';
 
 export type IdentifierKind = 'unrwa_card' | 'family_card_1948';
 
+export type IdentifierStatus = 'none' | 'needs_copy' | 'awaiting_check' | 'verified' | 'rejected';
+
 export type PersonIdentifiers = {
   unrwaCard: string | null;
   familyCard1948: string | null;
-  /** A copy of the UNRWA card is on file (attachment tag `unrwa_card`). Required for the number to match. */
-  hasUnrwaCardCopy: boolean;
   /**
-   * Where the UNRWA number stands: a Platform Administrator must check it against the card copy
-   * before it can link anyone. `none` = no number saved.
+   * Where each number stands. A copy of the card must be attached (document tag `unrwa_card` or
+   * `family_card`) and a Platform Administrator must check the number against it before it can
+   * link anyone. `none` = no number saved.
    */
-  unrwaStatus: UnrwaStatus;
+  status: Record<IdentifierKind, IdentifierStatus>;
 };
-
-export type UnrwaStatus = 'none' | 'needs_copy' | 'awaiting_check' | 'verified' | 'rejected';
 
 const KindSchema = z.enum(['unrwa_card', 'family_card_1948']);
 const SaveSchema = z.object({
@@ -34,32 +33,33 @@ const RemoveSchema = z.object({ personId: z.string().uuid(), kind: KindSchema })
  */
 export async function getPersonIdentifiers(personId: string): Promise<PersonIdentifiers> {
   const supabase = await createJuthoorSupabaseClient();
-  const [{ data: rows }, { count }] = await Promise.all([
+  const [{ data: rows }, { data: copies }] = await Promise.all([
     supabase
       .from('person_identifiers')
       .select('kind, value, verified_at, rejected_at')
       .eq('person_id', personId),
     supabase
       .from('person_attachments')
-      .select('id', { count: 'exact', head: true })
+      .select('tag')
       .eq('person_id', personId)
-      .eq('tag', 'unrwa_card'),
+      .in('tag', ['unrwa_card', 'family_card']),
   ]);
   const byKind = new Map((rows ?? []).map((r) => [r.kind, r]));
-  const unrwa = byKind.get('unrwa_card');
-  const hasCopy = (count ?? 0) > 0;
-  let unrwaStatus: UnrwaStatus = 'none';
-  if (unrwa) {
-    if (unrwa.verified_at) unrwaStatus = 'verified';
-    else if (!hasCopy) unrwaStatus = 'needs_copy';
-    else if (unrwa.rejected_at) unrwaStatus = 'rejected';
-    else unrwaStatus = 'awaiting_check';
-  }
+  const tags = new Set<string>((copies ?? []).map((c) => c.tag));
+  const statusOf = (kind: IdentifierKind, tag: string): IdentifierStatus => {
+    const row = byKind.get(kind);
+    if (!row) return 'none';
+    if (row.verified_at) return 'verified';
+    if (!tags.has(tag)) return 'needs_copy';
+    return row.rejected_at ? 'rejected' : 'awaiting_check';
+  };
   return {
-    unrwaCard: unrwa?.value ?? null,
+    unrwaCard: byKind.get('unrwa_card')?.value ?? null,
     familyCard1948: byKind.get('family_card_1948')?.value ?? null,
-    hasUnrwaCardCopy: hasCopy,
-    unrwaStatus,
+    status: {
+      unrwa_card: statusOf('unrwa_card', 'unrwa_card'),
+      family_card_1948: statusOf('family_card_1948', 'family_card'),
+    },
   };
 }
 

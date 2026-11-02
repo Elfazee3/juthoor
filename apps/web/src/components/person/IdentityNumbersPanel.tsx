@@ -11,7 +11,7 @@ import {
   savePersonIdentifier,
   type IdentifierKind,
   type PersonIdentifiers,
-  type UnrwaStatus,
+  type IdentifierStatus,
 } from '@/data/user/identifiers';
 
 /**
@@ -78,8 +78,8 @@ export function IdentityNumbersPanel({
       kind: 'family_card_1948',
       label: t('رقم البطاقة العائلية (1948)', 'Family card number (1948)'),
       hint: t(
-        'بطاقة للأسرة كلها: يتطابق الرقم مع الاسم الأول نفسه فقط.',
-        'Covers the whole household: matches only together with the same given name.',
+        'بطاقة للأسرة كلها: يتطابق الرقم مع الاسم الأول نفسه فقط، وبعد إرفاق نسخة البطاقة (الوسم: بطاقة عائلية) وتحقّق مدير المنصة من الرقم.',
+        'Covers the whole household: matches only together with the same given name, once a copy of the card is attached under Documents (tag: Family card) and a Platform Administrator has checked the number against it.',
       ),
     },
   ];
@@ -142,9 +142,7 @@ export function IdentityNumbersPanel({
                 )}
               </div>
               <p className="text-xs text-[var(--jt-stone-500)]">{row.hint}</p>
-              {row.kind === 'unrwa_card' && saved && ids && (
-                <UnrwaStatusLine status={ids.unrwaStatus} />
-              )}
+              {saved && ids && <StatusLine status={ids.status[row.kind]} />}
             </div>
           );
         })}
@@ -154,9 +152,9 @@ export function IdentityNumbersPanel({
   );
 }
 
-function UnrwaStatusLine({ status }: { status: UnrwaStatus }) {
+function StatusLine({ status }: { status: IdentifierStatus }) {
   const { t } = useLocale();
-  const states: Record<Exclude<UnrwaStatus, 'none'>, { tone: string; icon: typeof FileCheck2; text: string }> = {
+  const states: Record<Exclude<IdentifierStatus, 'none'>, { tone: string; icon: typeof FileCheck2; text: string }> = {
     verified: {
       tone: 'text-emerald-700',
       icon: FileCheck2,
