@@ -87,6 +87,7 @@ function recordingSupabase() {
       person_names: tables.person_names ?? [],
       events: tables.events ?? [],
       family_children: (tables.family_children ?? []).map((l) => ({ ...l, families: { tree_id: 't' } })),
+      person_notes: tables.person_notes ?? [],
       places: [],
     };
   }

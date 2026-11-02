@@ -4,10 +4,12 @@ import { AddChildCard } from '@/components/tree/AddChildCard';
 import { PersonPageHeader } from '@/components/tree/PersonPageHeader';
 import { TreeView360 } from '@/components/tree/TreeView360';
 import { EvidencePanel } from '@/components/person/EvidencePanel';
+import { RecordOwnerPanel } from '@/components/person/RecordOwnerPanel';
 import { PersonStoryPanel } from '@/components/person/PersonStoryPanel';
 import { getPerson, getTreePersons } from '@/data/anon/persons';
 import { getViewerTreeSnapshot } from '@/data/anon/treeSnapshot';
 import { getPrimaryPhotoUrl } from '@/data/user/attachments';
+import { getRecordOwnership } from '@/data/user/ownership';
 import { loadPersonProfile } from '@/data/user/personProfiles';
 import { buildNeighbors } from '@/lib/tree/relationships';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
@@ -53,13 +55,14 @@ export default async function PersonPage({ params }: Props) {
   const person = await getPerson(personId);
   if (!person) notFound();
 
-  const [snapshot, allPersons, primaryPhotoUrl, canManage, personProfile] =
+  const [snapshot, allPersons, primaryPhotoUrl, canManage, personProfile, ownership] =
     await Promise.all([
       getViewerTreeSnapshot(treeId),
       getTreePersons(treeId),
       getPrimaryPhotoUrl(personId),
       viewerCanManage(treeId),
       loadPersonProfile(personId).catch(() => null),
+      getRecordOwnership(personId).catch(() => null),
     ]);
   const neighbors = buildNeighbors(snapshot, personId);
 
@@ -90,6 +93,8 @@ export default async function PersonPage({ params }: Props) {
           />
         </div>
       </div>
+
+      {ownership ? <RecordOwnerPanel personId={personId} ownership={ownership} /> : null}
 
       <PersonStoryPanel
         personId={personId}

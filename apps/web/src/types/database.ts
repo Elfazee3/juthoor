@@ -112,7 +112,10 @@ export interface Person {
   readonly display_name_en: string | null;
   readonly gedcom_xref: string | null;
   readonly is_living: boolean;
+  /** Only the system value 'placeholder'. Free-text notes live in `person_notes` (D1). */
   readonly notes: string | null;
+  /** Owner of the record (D1): the account this person is linked to. */
+  readonly owner_user_id: string | null;
   readonly created_by: string | null;
   readonly created_at: string;
   readonly updated_at: string;
@@ -310,10 +313,25 @@ type MutablePerson = {
   gedcom_xref: string | null;
   is_living: boolean;
   notes: string | null;
+  owner_user_id: string | null;
   primary_photo_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type MutablePersonNote = {
+  person_id: string;
+  body: string;
+  updated_by: string | null;
+  updated_at: string;
+};
+
+type MutablePersonAccessGrant = {
+  person_id: string;
+  grantee_user_id: string;
+  granted_by: string | null;
+  created_at: string;
 };
 
 type MutablePersonAttachment = {
@@ -529,6 +547,18 @@ export type Database = {
         Update: Partial<MutablePerson>;
         Relationships: [];
       };
+      person_notes: {
+        Row: MutablePersonNote;
+        Insert: Partial<MutablePersonNote> & { person_id: string; body: string };
+        Update: Partial<MutablePersonNote>;
+        Relationships: [];
+      };
+      person_access_grants: {
+        Row: MutablePersonAccessGrant;
+        Insert: Partial<MutablePersonAccessGrant> & { person_id: string; grantee_user_id: string };
+        Update: Partial<MutablePersonAccessGrant>;
+        Relationships: [];
+      };
       person_names: {
         Row: MutablePersonName;
         Insert: Partial<MutablePersonName> & { person_id: string };
@@ -727,6 +757,16 @@ export type Database = {
         Returns: undefined;
       };
       revoke_auto_link: { Args: { p_match_id: string }; Returns: undefined };
+      claim_person: { Args: { p_person: string }; Returns: undefined };
+      release_person: { Args: { p_person: string }; Returns: undefined };
+      grant_person_access: {
+        Args: { p_person: string; p_grantee: string };
+        Returns: undefined;
+      };
+      revoke_person_access: {
+        Args: { p_person: string; p_grantee: string };
+        Returns: undefined;
+      };
       revoke_person_link: { Args: { p_link_id: string }; Returns: undefined };
     };
     Enums: {

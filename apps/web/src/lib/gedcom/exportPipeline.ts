@@ -73,7 +73,7 @@ export async function exportTreeToSnapshot(
 ): Promise<GedcomSnapshot> {
   // Names and events are scoped to this tree through their person or
   // family; on their own, those tables hold every tree the user can read.
-  const [persons, families, childRows, names, personEvents, familyEvents, places] =
+  const [persons, families, childRows, names, personEvents, familyEvents, places, noteRows] =
     await Promise.all([
       readAll<Person>((from, to) =>
         supabase
@@ -133,7 +133,18 @@ export async function exportTreeToSnapshot(
             .order('id')
             .range(from, to)
       ),
+      // Free-text notes are a table of their own (D1); the database already withholds those of
+      // living people from anyone who may not read them.
+      readAll<{ person_id: string; body: string }>((from, to) =>
+        supabase
+          .from('person_notes')
+          .select('person_id, body, persons!inner(tree_id)')
+          .eq('persons.tree_id', treeId)
+          .order('person_id')
+          .range(from, to)
+      ),
     ]);
+  const noteByPerson = new Map(noteRows.map((n) => [n.person_id, n.body]));
 
   // strip the joined `families` so we only keep the child-link fields
   const childLinks = childRows.map(({ families: _omit, ...rest }) => rest);
@@ -250,7 +261,7 @@ export async function exportTreeToSnapshot(
       events: personEvents.map((e: Event) =>
         toGedcomEvent(e, placeLookup)
       ),
-      notes: masked ? undefined : (p.notes ?? undefined),
+      notes: masked ? undefined : noteByPerson.get(p.id),
     };
   });
 

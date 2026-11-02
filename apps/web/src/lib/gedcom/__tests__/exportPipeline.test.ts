@@ -5,8 +5,8 @@ import { serializeGedcom } from '../serialize';
 
 import { fakeSupabase, MAX_ROWS, type Row } from './fakeSupabase';
 
-function person(id: string, xref: string, gender: 'M' | 'F', notes: string | null = null): Row {
-  return { id, gedcom_xref: xref, gender, display_name_ar: null, display_name_en: null, notes };
+function person(id: string, xref: string, gender: 'M' | 'F'): Row {
+  return { id, gedcom_xref: xref, gender, display_name_ar: null, display_name_en: null, notes: null };
 }
 
 function name(personId: string, given: string, surname: string): Row {
@@ -44,7 +44,7 @@ function event(
 const ROWS: Record<string, readonly Row[]> = {
   persons: [
     person('p-grandfather', '@I1@', 'M'),
-    person('p-father', '@I2@', 'M', 'Mobile 0599 000 000'),
+    person('p-father', '@I2@', 'M'),
     person('p-mother', '@I3@', 'F'),
     person('p-great-grandmother', '@I4@', 'F'),
   ],
@@ -69,6 +69,7 @@ const ROWS: Record<string, readonly Row[]> = {
     event({ person_id: 'p-great-grandmother' }, 'BIRT', 1850, 'Lifta'),
     event({ family_id: 'f-parents' }, 'MARR', 1985, 'Amman'),
   ],
+  person_notes: [{ person_id: 'p-father', body: 'Mobile 0599 000 000' }],
   places: [],
 };
 

@@ -65,7 +65,6 @@ export async function importGedcomSnapshot(
         display_name_ar: displayAr,
         display_name_en: displayEn,
         gedcom_xref: p.xref,
-        notes: p.notes ?? null,
       })
       .select('id')
       .single();
@@ -75,6 +74,14 @@ export async function importGedcomSnapshot(
     }
     xrefToPersonId.set(p.xref, inserted.id);
     personsInserted++;
+
+    // Free-text notes are non-mandatory information, kept apart from the person row (D1).
+    if (p.notes?.trim()) {
+      const { error: noteError } = await supabase
+        .from('person_notes')
+        .insert({ person_id: inserted.id, body: p.notes });
+      if (noteError) errors.push(`Failed to save the note of ${p.xref}: ${noteError.message}`);
+    }
 
     // Primary name row
     await supabase.from('person_names').insert({
