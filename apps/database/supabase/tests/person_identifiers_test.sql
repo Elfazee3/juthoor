@@ -57,13 +57,19 @@ INSERT INTO public.person_attachments (person_id, kind, tag, storage_path, mime_
     '02000000-0000-0000-0000-000000000001',
     '05000000-0000-0000-0000-000000000001', '05000000-0000-0000-0000-000000000002']::uuid[]) AS p;
 
+-- the Platform Administrator verified the u and g cards against their copies (as the table owner here)
+UPDATE public.person_identifiers i
+   SET verified_at = now(), verified_attachment_id = (SELECT a.id FROM public.person_attachments a WHERE a.person_id = i.person_id)
+ WHERE i.person_id IN ('01000000-0000-0000-0000-000000000001', '01000000-0000-0000-0000-000000000002',
+                       '05000000-0000-0000-0000-000000000001', '05000000-0000-0000-0000-000000000002');
+
 SELECT is((SELECT value_norm FROM public.person_identifiers WHERE person_id = '01000000-0000-0000-0000-000000000001'),
   '123456', 'the number is normalised to letters and digits');
 
 SELECT is(public.identifier_perfect_match('01000000-0000-0000-0000-000000000001','01000000-0000-0000-0000-000000000002'),
   'unrwa_card', 'same UNRWA number with a card copy on both is a perfect match');
 SELECT is(public.identifier_perfect_match('02000000-0000-0000-0000-000000000001','02000000-0000-0000-0000-000000000002'),
-  NULL, 'without a card copy on both people the UNRWA number does not count');
+  NULL, 'without a verified card copy on both people the UNRWA number does not count');
 SELECT is(public.identifier_perfect_match('03000000-0000-0000-0000-000000000001','03000000-0000-0000-0000-000000000002'),
   NULL, 'before features exist a family card cannot confirm the given name');
 
@@ -81,7 +87,7 @@ SELECT is((SELECT status::text FROM public.matches WHERE person_a_id = '01000000
 SELECT is((SELECT status::text FROM public.matches WHERE person_a_id = '03000000-0000-0000-0000-000000000001'),
   'auto_merged', 'a family-card plus given-name match links');
 SELECT isnt((SELECT status::text FROM public.matches WHERE person_a_id = '02000000-0000-0000-0000-000000000001'),
-  'auto_merged', 'a UNRWA number without both card copies does not link');
+  'auto_merged', 'a UNRWA number without both verified card copies does not link');
 SELECT isnt((SELECT status::text FROM public.matches WHERE person_a_id = '04000000-0000-0000-0000-000000000001'),
   'auto_merged', 'siblings are not linked by the family card');
 SELECT is((SELECT count(*)::int FROM public.matches WHERE person_a_id = '05000000-0000-0000-0000-000000000001' AND status = 'auto_merged'),

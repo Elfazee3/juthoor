@@ -441,6 +441,10 @@ type MutablePersonIdentifier = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  verified_at: string | null;
+  verified_by: string | null;
+  verified_attachment_id: string | null;
+  rejected_at: string | null;
 };
 
 type MutablePersonPrivacyHold = {
@@ -749,6 +753,24 @@ export type Database = {
         Returns: undefined;
       };
       revoke_auto_link: { Args: { p_match_id: string }; Returns: undefined };
+      verify_unrwa_card: {
+        Args: { p_person: string; p_attachment: string };
+        Returns: undefined;
+      };
+      reject_unrwa_card: { Args: { p_person: string }; Returns: undefined };
+      list_unrwa_card_queue: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          person_id: string;
+          tree_id: string;
+          tree_name: string | null;
+          person_name: string | null;
+          value: string;
+          attachment_id: string;
+          storage_path: string;
+          uploaded_at: string;
+        }[];
+      };
       revoke_person_link: { Args: { p_link_id: string }; Returns: undefined };
     };
     Enums: {

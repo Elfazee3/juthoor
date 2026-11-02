@@ -11,7 +11,14 @@ export type PersonIdentifiers = {
   familyCard1948: string | null;
   /** A copy of the UNRWA card is on file (attachment tag `unrwa_card`). Required for the number to match. */
   hasUnrwaCardCopy: boolean;
+  /**
+   * Where the UNRWA number stands: a Platform Administrator must check it against the card copy
+   * before it can link anyone. `none` = no number saved.
+   */
+  unrwaStatus: UnrwaStatus;
 };
+
+export type UnrwaStatus = 'none' | 'needs_copy' | 'awaiting_check' | 'verified' | 'rejected';
 
 const KindSchema = z.enum(['unrwa_card', 'family_card_1948']);
 const SaveSchema = z.object({
@@ -28,18 +35,31 @@ const RemoveSchema = z.object({ personId: z.string().uuid(), kind: KindSchema })
 export async function getPersonIdentifiers(personId: string): Promise<PersonIdentifiers> {
   const supabase = await createJuthoorSupabaseClient();
   const [{ data: rows }, { count }] = await Promise.all([
-    supabase.from('person_identifiers').select('kind, value').eq('person_id', personId),
+    supabase
+      .from('person_identifiers')
+      .select('kind, value, verified_at, rejected_at')
+      .eq('person_id', personId),
     supabase
       .from('person_attachments')
       .select('id', { count: 'exact', head: true })
       .eq('person_id', personId)
       .eq('tag', 'unrwa_card'),
   ]);
-  const byKind = new Map((rows ?? []).map((r) => [r.kind, r.value]));
+  const byKind = new Map((rows ?? []).map((r) => [r.kind, r]));
+  const unrwa = byKind.get('unrwa_card');
+  const hasCopy = (count ?? 0) > 0;
+  let unrwaStatus: UnrwaStatus = 'none';
+  if (unrwa) {
+    if (unrwa.verified_at) unrwaStatus = 'verified';
+    else if (!hasCopy) unrwaStatus = 'needs_copy';
+    else if (unrwa.rejected_at) unrwaStatus = 'rejected';
+    else unrwaStatus = 'awaiting_check';
+  }
   return {
-    unrwaCard: byKind.get('unrwa_card') ?? null,
-    familyCard1948: byKind.get('family_card_1948') ?? null,
-    hasUnrwaCardCopy: (count ?? 0) > 0,
+    unrwaCard: unrwa?.value ?? null,
+    familyCard1948: byKind.get('family_card_1948')?.value ?? null,
+    hasUnrwaCardCopy: hasCopy,
+    unrwaStatus,
   };
 }
 

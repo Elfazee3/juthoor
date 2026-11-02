@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, FileCheck2, FileWarning, Trash2 } from 'lucide-react';
+import { Check, FileCheck2, FileWarning, Hourglass, Trash2 } from 'lucide-react';
 import { useLocale } from '@/contexts/LocaleContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import {
   savePersonIdentifier,
   type IdentifierKind,
   type PersonIdentifiers,
+  type UnrwaStatus,
 } from '@/data/user/identifiers';
 
 /**
@@ -69,8 +70,8 @@ export function IdentityNumbersPanel({
       kind: 'unrwa_card',
       label: t('رقم بطاقة تسجيل الأونروا', 'UNRWA registration card number'),
       hint: t(
-        'يُعتمد للمطابقة فقط بعد إرفاق نسخة من البطاقة ضمن الوثائق (الوسم: بطاقة الأونروا).',
-        'Used for matching only once a copy of the card is attached under Documents (tag: UNRWA card).',
+        'يُعتمد للمطابقة فقط بعد إرفاق نسخة من البطاقة ضمن الوثائق (الوسم: بطاقة الأونروا) وتحقّق مدير المنصة من الرقم.',
+        'Used for matching only once a copy of the card is attached under Documents (tag: UNRWA card) and a Platform Administrator has checked the number against it.',
       ),
     },
     {
@@ -141,21 +142,8 @@ export function IdentityNumbersPanel({
                 )}
               </div>
               <p className="text-xs text-[var(--jt-stone-500)]">{row.hint}</p>
-              {row.kind === 'unrwa_card' && saved && (
-                <p
-                  className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                    ids?.hasUnrwaCardCopy ? 'text-emerald-700' : 'text-amber-700'
-                  }`}
-                >
-                  {ids?.hasUnrwaCardCopy ? (
-                    <FileCheck2 className="h-3.5 w-3.5" />
-                  ) : (
-                    <FileWarning className="h-3.5 w-3.5" />
-                  )}
-                  {ids?.hasUnrwaCardCopy
-                    ? t('نسخة البطاقة مرفقة', 'Card copy attached')
-                    : t('نسخة البطاقة مطلوبة', 'Card copy required')}
-                </p>
+              {row.kind === 'unrwa_card' && saved && ids && (
+                <UnrwaStatusLine status={ids.unrwaStatus} />
               )}
             </div>
           );
@@ -163,5 +151,42 @@ export function IdentityNumbersPanel({
         {error && <p className="text-sm text-[var(--jt-terra-600)]">{error}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function UnrwaStatusLine({ status }: { status: UnrwaStatus }) {
+  const { t } = useLocale();
+  const states: Record<Exclude<UnrwaStatus, 'none'>, { tone: string; icon: typeof FileCheck2; text: string }> = {
+    verified: {
+      tone: 'text-emerald-700',
+      icon: FileCheck2,
+      text: t('تحقق مدير المنصة من الرقم', 'Checked by a Platform Administrator'),
+    },
+    awaiting_check: {
+      tone: 'text-amber-700',
+      icon: Hourglass,
+      text: t('بانتظار تحقق مدير المنصة', 'Waiting for a Platform Administrator to check it'),
+    },
+    needs_copy: {
+      tone: 'text-amber-700',
+      icon: FileWarning,
+      text: t('نسخة البطاقة مطلوبة', 'Card copy required'),
+    },
+    rejected: {
+      tone: 'text-[var(--jt-terra-600)]',
+      icon: FileWarning,
+      text: t(
+        'لم يطابق الرقم البطاقة: صحّحه أو أرفق نسخة أوضح',
+        'The number did not match the card: correct it or attach a clearer copy',
+      ),
+    },
+  };
+  if (status === 'none') return null;
+  const { tone, icon: Icon, text } = states[status];
+  return (
+    <p className={`inline-flex items-center gap-1.5 text-xs font-medium ${tone}`}>
+      <Icon className="h-3.5 w-3.5" />
+      {text}
+    </p>
   );
 }
