@@ -16,12 +16,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useLocale } from '@/contexts/LocaleContext';
 
 interface Props {
-  readonly treeId: string;
+  /**
+   * The tree to add the file's people to. Without it the file becomes a NEW tree
+   * (a family tree made in another platform), and the importer becomes its
+   * IFT Administrator.
+   */
+  readonly treeId?: string;
 }
 
 interface ImportSummary {
+  readonly treeId?: string;
   readonly personsInserted: number;
   readonly familiesInserted: number;
   readonly childLinksInserted: number;
@@ -34,13 +41,17 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 export function ImportGedcomDialog({ treeId }: Props) {
   const router = useRouter();
+  const { t } = useLocale();
+  const asNewTree = !treeId;
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [treeName, setTreeName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   function reset() {
     setFile(null);
+    setTreeName('');
     setSummary(null);
   }
 
@@ -55,8 +66,9 @@ export function ImportGedcomDialog({ treeId }: Props) {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      if (asNewTree && treeName.trim()) formData.append('name', treeName.trim());
 
-      const res = await fetch(`/api/tree/${treeId}/gedcom`, {
+      const res = await fetch(asNewTree ? '/api/tree/import' : `/api/tree/${treeId}/gedcom`, {
         method: 'POST',
         body: formData,
       });
@@ -70,7 +82,8 @@ export function ImportGedcomDialog({ treeId }: Props) {
       toast.success(
         `تم استيراد ${body.personsInserted} شخصًا و${body.familiesInserted} عائلة`
       );
-      router.refresh();
+      if (asNewTree && body.treeId) router.push(`/tree/${body.treeId}`);
+      else router.refresh();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -89,20 +102,40 @@ export function ImportGedcomDialog({ treeId }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline" className="inline-flex items-center gap-2">
           <Upload className="h-4 w-4" />
-          استيراد GEDCOM
+          {asNewTree ? t('استيراد شجرة من منصة أخرى', 'Import a tree from another platform') : 'استيراد GEDCOM'}
         </Button>
       </DialogTrigger>
       <DialogContent dir="rtl" className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>استيراد شجرة GEDCOM</DialogTitle>
+          <DialogTitle>
+            {asNewTree ? t('استيراد شجرة جديدة', 'Import a new tree') : 'استيراد شجرة GEDCOM'}
+          </DialogTitle>
           <DialogDescription>
-            ارفع ملف <code>.ged</code> (حتى ٥ ميجابايت) وسيُضاف محتواه
-            إلى شجرتك. قد تحتاج القرى غير المعروفة إلى ربط يدوي لاحقًا.
+            {asNewTree ? (
+              t(
+                'ارفع ملف .ged من منصة أخرى (حتى ٥ ميجابايت) لتصبح شجرة جديدة تديرها أنت. تبقى خاصة، ولا يظهر الأحياء فيها لغيرك: بيانات الأحياء غير الإلزامية تُصدَّر لمدير الشجرة وحده.',
+                'Upload a .ged file from another platform (up to 5 MB). It becomes a new tree that you manage. It starts private, and the living people in it stay hidden from everyone else: only the tree’s IFT Administrator can export their non-mandatory details.',
+              )
+            ) : (
+              <>
+                ارفع ملف <code>.ged</code> (حتى ٥ ميجابايت) وسيُضاف محتواه
+                إلى شجرتك. قد تحتاج القرى غير المعروفة إلى ربط يدوي لاحقًا.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
         {!summary ? (
           <div className="space-y-3">
+            {asNewTree ? (
+              <Input
+                value={treeName}
+                maxLength={100}
+                onChange={(e) => setTreeName(e.target.value)}
+                placeholder={t('اسم الشجرة (اختياري)', 'Tree name (optional)')}
+                disabled={isUploading}
+              />
+            ) : null}
             <Input
               type="file"
               accept=".ged,.GED,text/plain"

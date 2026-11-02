@@ -3,10 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exportTreeToSnapshot } from '@/lib/gedcom/exportPipeline';
 import { importGedcomSnapshot } from '@/lib/gedcom/importPipeline';
 import { parseGedcom } from '@/lib/gedcom/parse';
+import { readGedcomUpload, UploadError } from '@/lib/gedcom/readUpload';
 import { serializeGedcom } from '@/lib/gedcom/serialize';
 import { createJuthoorSupabaseClient } from '@/supabase-clients/juthoor-server';
-
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB per Step-3 decision
 
 interface Params {
   readonly params: Promise<{ readonly treeId: string }>;
@@ -68,51 +67,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { treeId } = await params;
 
   try {
-    const contentType = req.headers.get('content-type') ?? '';
-    let rawGedcom: string;
-
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData();
-      const file = formData.get('file');
-      if (!(file instanceof File)) {
-        return NextResponse.json(
-          { error: 'No file uploaded under "file" field' },
-          { status: 400 }
-        );
-      }
-      if (file.size > MAX_UPLOAD_BYTES) {
-        return NextResponse.json(
-          {
-            error: `File exceeds the 5 MB limit (got ${Math.round(file.size / 1024)} KB)`,
-          },
-          { status: 413 }
-        );
-      }
-      rawGedcom = await file.text();
-    } else {
-      const bodyText = await req.text();
-      if (bodyText.length > MAX_UPLOAD_BYTES) {
-        return NextResponse.json(
-          { error: 'Body exceeds the 5 MB limit' },
-          { status: 413 }
-        );
-      }
-      rawGedcom = bodyText;
-    }
-
-    if (!rawGedcom.trim()) {
-      return NextResponse.json(
-        { error: 'Uploaded GEDCOM is empty' },
-        { status: 400 }
-      );
-    }
-
-    const snapshot = parseGedcom(rawGedcom);
+    const upload = await readGedcomUpload(req);
+    const snapshot = parseGedcom(upload.text);
     const supabase = await createJuthoorSupabaseClient();
     const summary = await importGedcomSnapshot(supabase, treeId, snapshot);
 
     return NextResponse.json(summary, { status: 200 });
   } catch (error) {
+    if (error instanceof UploadError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     const message =
       error instanceof Error ? error.message : 'Import failed';
     return NextResponse.json({ error: message }, { status: 500 });
