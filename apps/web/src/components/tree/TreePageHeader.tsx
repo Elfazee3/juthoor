@@ -43,7 +43,6 @@ export function TreePageHeader({ treeId, treeName, treeDescription }: Props) {
           </Button>
         </Link>
         <ImportGedcomDialog treeId={treeId} />
-        <ImportGedcomDialog />
         <ExportGedcomButton treeId={treeId} />
       </div>
     </header>
